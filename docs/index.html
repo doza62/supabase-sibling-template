@@ -618,10 +618,14 @@ function saveReusables() {
 
 // ─── Project CRUD ──────────────────────────────────────────
 function newProject() {
+  const name = prompt('Project name (e.g., Aida, Onepm, Mobile Apps):');
+  if (name === null) return;
+  const cleanName = name.trim();
+  if (!cleanName) return;
   const proj = {
     id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    name: 'New Project',
-    slug: 'new',
+    name: cleanName,
+    slug: slugify(cleanName),
     overrides: {},
     publicUrls: { kong: '', studio: '' },
     health: { kong: 'unknown', studio: 'unknown' },
@@ -633,6 +637,11 @@ function newProject() {
   state.currentId = proj.id;
   save();
   render();
+  // Focus name field after render
+  setTimeout(() => {
+    const nameInput = document.querySelector('input[data-role="name"]');
+    if (nameInput) { nameInput.focus(); nameInput.select(); }
+  }, 0);
 }
 function deleteProject(id) {
   if (!confirm('Delete this project?')) return;
@@ -760,6 +769,15 @@ function getStatusIcon(p) {
 }
 
 function renderMain() {
+  // Preserve focus + caret across re-render
+  const activeEl = document.activeElement;
+  const focusInfo = activeEl && activeEl.tagName === 'INPUT' ? {
+    key: activeEl.dataset.key || activeEl.dataset.role || null,
+    role: activeEl.dataset.role,
+    caretStart: activeEl.selectionStart,
+    caretEnd: activeEl.selectionEnd
+  } : null;
+
   const main = document.getElementById('main');
   if (!state.currentId) {
     main.innerHTML = `
@@ -791,7 +809,7 @@ function renderMain() {
     return `
       <div class="field">
         <label>${k}</label>
-        <input type="text" value="${escAttr(val)}" placeholder="auto: ${escAttr(auto)}"
+        <input type="text" data-role="field" data-key="${k}" value="${escAttr(val)}" placeholder="auto: ${escAttr(auto)}"
           class="${isOverridden ? 'overridden' : 'auto'}"
           oninput="updateField('${k}', this.value)">
         <span class="hint-icon ${isOverridden ? 'ok' : ''}">${isOverridden ? '✎' : '⚡'}</span>
@@ -805,7 +823,7 @@ function renderMain() {
     return `
       <div class="field">
         <label>${k}</label>
-        <input type="text" value="${escAttr(val)}" placeholder="${escAttr(getPlaceholder(k, proj))}"
+        <input type="text" data-role="field" data-key="${k}" value="${escAttr(val)}" placeholder="${escAttr(getPlaceholder(k, proj))}"
           class="${isAutogen ? 'empty-warn' : ''}"
           oninput="updateField('${k}', this.value)">
         <span class="hint-icon ${isAutogen ? 'danger' : isAuto ? 'warn' : 'ok'}">${isAutogen ? '∅' : isAuto ? '⚡' : '✎'}</span>
@@ -832,10 +850,10 @@ function renderMain() {
   main.innerHTML = `
     <div class="main-header">
       <div style="display:flex;align-items:center;gap:12px;flex:1;">
-        <input type="text" value="${escAttr(proj.name)}"
+        <input type="text" value="${escAttr(proj.name)}" data-role="name"
                style="background:transparent;border:none;color:var(--text);font-size:1.4rem;font-weight:600;min-width:200px;"
                oninput="updateName(this.value)">
-        <input type="text" value="${escAttr(proj.slug)}"
+        <input type="text" value="${escAttr(proj.slug)}" data-role="slug"
                style="background:transparent;border:none;color:var(--muted);font-size:0.95rem;font-family:'SF Mono',monospace;width:140px;"
                oninput="updateSlug(this.value)">
       </div>
@@ -898,6 +916,16 @@ function renderMain() {
       </div>
     </div>
   `;
+
+  // Restore focus + caret
+  if (focusInfo && focusInfo.role) {
+    const sel = focusInfo.key ? `input[data-role="${focusInfo.role}"][data-key="${focusInfo.key}"]` : `input[data-role="${focusInfo.role}"]`;
+    const newEl = document.querySelector(sel);
+    if (newEl) {
+      newEl.focus();
+      try { newEl.setSelectionRange(focusInfo.caretStart, focusInfo.caretEnd); } catch(e) {}
+    }
+  }
 }
 
 function render() {
