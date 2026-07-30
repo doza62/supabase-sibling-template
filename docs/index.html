@@ -43,13 +43,10 @@ body {
   padding: 16px;
   border-bottom: 1px solid var(--border);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
-.sidebar-header h1 {
-  font-size: 1rem;
-  font-weight: 600;
-}
+.sidebar-header h1 { font-size: 1rem; font-weight: 600; }
 .sidebar-header .logo {
   width: 24px; height: 24px;
   background: var(--accent);
@@ -136,14 +133,10 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
 }
-.main-header h2 {
-  font-size: 1.4rem;
-}
-.main-header .actions {
-  display: flex;
-  gap: 8px;
-}
+.main-header h2 { font-size: 1.4rem; }
+.main-header .actions { display: flex; gap: 8px; }
 
 /* ─── Sections ────────────────────────────────────────────── */
 .section {
@@ -154,6 +147,7 @@ body {
   margin-bottom: 16px;
 }
 .section.hostnames { border-left: 3px solid var(--blue); }
+.section.smtp { border-left: 3px solid var(--purple); }
 .section.shared { border-left: 3px solid var(--accent); }
 .section.sibling { border-left: 3px solid var(--warn); }
 .section.urls { border-left: 3px solid var(--purple); }
@@ -213,6 +207,9 @@ body {
   background: rgba(62, 207, 142, 0.05);
   border-color: rgba(62, 207, 142, 0.3);
 }
+.field input.empty-warn {
+  border-color: rgba(255, 107, 107, 0.4);
+}
 .field .hint-icon {
   font-size: 0.85rem;
   color: var(--muted);
@@ -221,6 +218,7 @@ body {
 }
 .field .hint-icon.warn { color: var(--warn); }
 .field .hint-icon.ok { color: var(--accent); }
+.field .hint-icon.danger { color: var(--danger); }
 
 /* ─── Live Preview ────────────────────────────────────────── */
 .preview {
@@ -244,6 +242,7 @@ body {
 .preview .val.empty { color: var(--danger); font-style: italic; }
 .preview .val.auto { color: var(--warn); }
 .preview .val.override { color: var(--accent); }
+.preview .val.autogen { color: var(--muted); font-style: italic; }
 
 /* ─── Output ──────────────────────────────────────────────── */
 textarea.output {
@@ -293,14 +292,36 @@ button.warn { background: var(--warn); color: var(--bg); }
   border-radius: 8px;
   padding: 24px;
   width: 90%;
-  max-width: 600px;
+  max-width: 720px;
   max-height: 90vh;
   overflow-y: auto;
 }
-.modal h2 { margin-bottom: 16px; }
-.modal textarea {
+.modal h2 { margin-bottom: 8px; }
+.modal .modal-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal .modal-tab {
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border: none;
+  background: transparent;
+}
+.modal .modal-tab.active {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+.modal .modal-tab:hover { color: var(--text); }
+.modal .modal-pane { display: none; }
+.modal .modal-pane.active { display: block; }
+.modal textarea.bulk {
   width: 100%;
-  min-height: 240px;
+  min-height: 200px;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
@@ -354,22 +375,31 @@ button.warn { background: var(--warn); color: var(--bg); }
 .toast.show { opacity: 1; }
 
 /* ─── Misc ────────────────────────────────────────────────── */
-.kv-list {
+.hint { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+.field-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.field-row label {
   font-family: 'SF Mono', Menlo, monospace;
   font-size: 0.82rem;
+  color: var(--muted);
 }
-.kv-list .row {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px dashed var(--border);
+.field-row input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  width: 100%;
 }
-.kv-list .row:last-child { border-bottom: none; }
-.kv-list .key { color: var(--blue); }
-.kv-list .val { color: var(--text); word-break: break-all; }
-.kv-list .val.empty { color: var(--danger); font-style: italic; }
-.hint { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+.field-row input:focus { outline: 1px solid var(--accent); }
+.field-row input.unset { border-color: rgba(255, 107, 107, 0.3); background: rgba(255,107,107,0.05); }
 
 @media (max-width: 800px) {
   body { grid-template-columns: 1fr; }
@@ -381,29 +411,61 @@ button.warn { background: var(--warn); color: var(--bg); }
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div class="logo">S</div>
-      <h1>Sibling Manager</h1>
-    </div>
+    <div class="logo">S</div>
+    <h1>Sibling Manager</h1>
   </div>
   <button class="new-btn" onclick="newProject()">+ New Project</button>
   <div class="project-list" id="projectList"></div>
   <div class="sidebar-footer">
-    <button onclick="openHubModal()">Hub Config</button>
-    <button class="warn" onclick="clearAll()">Reset</button>
+    <button onclick="openReusablesModal()">Reusables</button>
+    <button class="warn" onclick="resetAll()">Reset</button>
   </div>
 </aside>
 
 <main class="main" id="main"></main>
 
-<div class="modal-bg" id="hubModal">
+<div class="modal-bg" id="reusablesModal">
   <div class="modal">
-    <h2>Hub Configuration</h2>
-    <p class="hint" style="margin-bottom:12px;">Paste env vars from hub's Coolify Environment tab. Values are stored locally.</p>
-    <textarea id="hubInput" placeholder="SERVICE_PASSWORD_POSTGRES=...&#10;SERVICE_PASSWORD_JWT=...&#10;POSTGRES_HOSTNAME=supabase-mobile-apps-...-db&#10;..."></textarea>
-    <div class="btn-row">
-      <button onclick="saveHub()">Save Hub Config</button>
-      <button class="secondary" onclick="closeHubModal()">Cancel</button>
+    <h2>Reusables Setup</h2>
+    <p class="hint" style="margin-bottom:12px;">Configure once. Applied to all projects. Bulk paste from Coolify, or edit individual fields below.</p>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('bulk')">Bulk Paste</button>
+      <button class="modal-tab" onclick="switchTab('hostnames')">🔵 Hostnames</button>
+      <button class="modal-tab" onclick="switchTab('smtp')">📧 SMTP</button>
+      <button class="modal-tab" onclick="switchTab('shared')">🟢 Shared Secrets</button>
+    </div>
+
+    <div class="modal-pane active" id="pane-bulk">
+      <p class="hint" style="margin-bottom:8px;">Paste all env vars from Coolify (any deployed sibling or hub). Helper will categorize automatically.</p>
+      <textarea class="bulk" id="bulkInput" placeholder="SERVICE_PASSWORD_POSTGRES=...&#10;POSTGRES_HOSTNAME=...&#10;SMTP_HOST=...&#10;..."></textarea>
+      <div class="btn-row">
+        <button onclick="parseBulk()">Parse &amp; Distribute</button>
+        <button class="secondary" onclick="closeReusablesModal()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="modal-pane" id="pane-hostnames">
+      <h3 style="margin-bottom:10px;">🔵 Hub Hostnames</h3>
+      <div class="hint" style="margin-bottom:10px;">Container names of hub services. Find via: <code>docker ps --format '{{ '{{.Names}}' }}' | grep mobile-apps</code></div>
+      <div id="hostnameFields"></div>
+    </div>
+
+    <div class="modal-pane" id="pane-smtp">
+      <h3 style="margin-bottom:10px;">📧 SMTP Configuration</h3>
+      <div class="hint" style="margin-bottom:10px;">Optional. Leave empty if not using email auth.</div>
+      <div id="smtpFields"></div>
+    </div>
+
+    <div class="modal-pane" id="pane-shared">
+      <h3 style="margin-bottom:10px;">🟢 Shared Secrets</h3>
+      <div class="hint" style="margin-bottom:10px;">Copied from hub. Masked. Empty values will be auto-generated by Coolify on sibling deploy (for <code>SERVICE_PASSWORD_*</code>).</div>
+      <div id="sharedFields"></div>
+    </div>
+
+    <div class="btn-row" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+      <button onclick="saveReusables()">Save Reusables</button>
+      <button class="secondary" onclick="closeReusablesModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -412,15 +474,8 @@ button.warn { background: var(--warn); color: var(--bg); }
 
 <script>
 // ─── State ─────────────────────────────────────────────────
-let state = {
-  hub: { hostnames: {}, shared: {}, other: {} },
-  projects: [],
-  currentId: null,
-  urlPattern: 'https://api.{slug}.5sites.co',
-  sitePattern: 'https://app.{slug}.5sites.co'
-};
-
 const HOSTNAME_KEYS = ['POSTGRES_HOSTNAME', 'MINIO_HOSTNAME', 'ANALYTICS_HOSTNAME'];
+const SMTP_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_ADMIN_EMAIL', 'SMTP_SENDER_NAME'];
 const SHARED_KEYS = [
   'SERVICE_PASSWORD_POSTGRES', 'SERVICE_PASSWORD_JWT',
   'SERVICE_SUPABASEANON_KEY', 'SERVICE_SUPABASESERVICE_KEY',
@@ -428,68 +483,137 @@ const SHARED_KEYS = [
   'SERVICE_USER_MINIO', 'SERVICE_PASSWORD_MINIO',
   'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE',
   'SECRET_PASSWORD_REALTIME',
-  'OPENAI_API_KEY', 'SMTP_ADMIN_EMAIL', 'SMTP_HOST', 'SMTP_PORT',
-  'SMTP_USER', 'SMTP_PASS', 'SMTP_SENDER_NAME'
+  'OPENAI_API_KEY'
 ];
 const AUTO_KEYS = ['POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STORAGE_TENANT_ID', 'SERVICE_USER_ADMIN'];
 const OVERRIDE_KEYS = ['API_EXTERNAL_URL', 'GOTRUE_SITE_URL', 'SERVICE_PASSWORD_ADMIN', 'ADDITIONAL_REDIRECT_URLS'];
+const AUTOGEN_KEYS = ['SERVICE_PASSWORD_ADMIN', 'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE', 'SECRET_PASSWORD_REALTIME'];
+
+const HOSTNAME_DEFAULTS = {
+  POSTGRES_HOSTNAME: 'supabase-db',
+  MINIO_HOSTNAME: 'supabase-minio',
+  ANALYTICS_HOSTNAME: 'supabase-analytics'
+};
+
+let state = {
+  reusables: {
+    hostnames: {POSTGRES_HOSTNAME: '', MINIO_HOSTNAME: '', ANALYTICS_HOSTNAME: ''},
+    smtp: {SMTP_HOST: '', SMTP_PORT: '587', SMTP_USER: '', SMTP_PASS: '', SMTP_ADMIN_EMAIL: '', SMTP_SENDER_NAME: ''},
+    shared: {}
+  },
+  projects: [],
+  currentId: null,
+  urlPattern: 'https://api.{slug}.5sites.co',
+  sitePattern: 'https://app.{slug}.5sites.co'
+};
+
+// Init shared keys with empty
+SHARED_KEYS.forEach(k => { state.reusables.shared[k] = ''; });
 
 // ─── Persistence ───────────────────────────────────────────
-function save() {
-  localStorage.setItem('supa-sibling-manager', JSON.stringify(state));
-}
+function save() { localStorage.setItem('supa-sibling-manager-v2', JSON.stringify(state)); }
 function load() {
-  const raw = localStorage.getItem('supa-sibling-manager');
+  const raw = localStorage.getItem('supa-sibling-manager-v2');
   if (raw) {
-    try { state = {...state, ...JSON.parse(raw)}; } catch(e) { console.warn('Load failed', e); }
+    try {
+      const parsed = JSON.parse(raw);
+      // Merge to ensure new keys exist
+      state = {
+        ...state,
+        ...parsed,
+        reusables: {
+          ...state.reusables,
+          ...(parsed.reusables || {}),
+          hostnames: {...state.reusables.hostnames, ...((parsed.reusables||{}).hostnames||{})},
+          smtp: {...state.reusables.smtp, ...((parsed.reusables||{}).smtp||{})},
+          shared: {...state.reusables.shared, ...((parsed.reusables||{}).shared||{})}
+        }
+      };
+    } catch(e) { console.warn('Load failed', e); }
   }
 }
 
-// ─── Hub Config ────────────────────────────────────────────
-function parseEnv(text) {
-  const result = {};
-  (text || '').split('\n').forEach(line => {
-    line = line.trim();
-    if (!line || line.startsWith('#')) return;
-    const eq = line.indexOf('=');
-    if (eq < 0) return;
-    const key = line.slice(0, eq).trim();
-    let val = line.slice(eq + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    }
-    result[key] = val;
-  });
-  return result;
+// ─── Reusables Modal ───────────────────────────────────────
+function openReusablesModal() {
+  // Pre-fill textarea with current reusables
+  const all = {...state.reusables.hostnames, ...state.reusables.smtp, ...state.reusables.shared};
+  const text = Object.entries(all).filter(([k,v]) => v).map(([k,v]) => `${k}=${v}`).join('\n');
+  document.getElementById('bulkInput').value = text;
+  renderHostnameFields();
+  renderSmtpFields();
+  renderSharedFields();
+  document.getElementById('reusablesModal').classList.add('show');
 }
-function categorizeHub(all) {
-  const hub = { hostnames: {}, shared: {}, other: {} };
-  Object.entries(all).forEach(([k, v]) => {
-    if (HOSTNAME_KEYS.includes(k)) hub.hostnames[k] = v;
-    else if (SHARED_KEYS.includes(k)) hub.shared[k] = v;
-    else if (!k.startsWith('SERVICE_URL_') && !k.startsWith('SERVICE_FQDN_') && !AUTO_KEYS.includes(k) && !OVERRIDE_KEYS.includes(k)) {
-      hub.other[k] = v;
-    }
-  });
-  return hub;
+function closeReusablesModal() {
+  document.getElementById('reusablesModal').classList.remove('show');
 }
-function openHubModal() {
-  const text = Object.entries({...state.hub.hostnames, ...state.hub.shared, ...state.hub.other})
-    .map(([k,v]) => `${k}=${v}`).join('\n');
-  document.getElementById('hubInput').value = text;
-  document.getElementById('hubModal').classList.add('show');
+function switchTab(name) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-pane').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('pane-' + name).classList.add('active');
 }
-function closeHubModal() {
-  document.getElementById('hubModal').classList.remove('show');
+function renderHostnameFields() {
+  document.getElementById('hostnameFields').innerHTML = HOSTNAME_KEYS.map(k => {
+    const v = state.reusables.hostnames[k] || '';
+    const def = HOSTNAME_DEFAULTS[k];
+    return `
+      <div class="field-row">
+        <label>${k}</label>
+        <input type="text" value="${escAttr(v)}" placeholder="e.g. supabase-mobile-apps-abc123-db"
+               class="${v ? '' : 'unset'}"
+               oninput="state.reusables.hostnames['${k}']=this.value; this.className=this.value?'':'unset';">
+      </div>
+      <div class="hint" style="margin:-2px 0 8px 230px;">Fallback default: <code>${def}</code> (standalone mode)</div>
+    `;
+  }).join('');
 }
-function saveHub() {
-  const text = document.getElementById('hubInput').value;
-  const all = parseEnv(text);
-  state.hub = categorizeHub(all);
+function renderSmtpFields() {
+  document.getElementById('smtpFields').innerHTML = SMTP_KEYS.map(k => {
+    const v = state.reusables.smtp[k] || '';
+    return `
+      <div class="field-row">
+        <label>${k}</label>
+        <input type="text" value="${escAttr(v)}" placeholder="${k.includes('PORT') ? '587' : ''}"
+               oninput="state.reusables.smtp['${k}']=this.value;">
+      </div>
+    `;
+  }).join('');
+}
+function renderSharedFields() {
+  document.getElementById('sharedFields').innerHTML = SHARED_KEYS.map(k => {
+    const v = state.reusables.shared[k] || '';
+    const isAutoGen = AUTOGEN_KEYS.includes(k);
+    return `
+      <div class="field-row">
+        <label>${k}</label>
+        <input type="text" value="${escAttr(v)}" placeholder="${isAutoGen ? 'empty = Coolify auto-generates' : 'set from hub'}"
+               oninput="state.reusables.shared['${k}']=this.value;">
+      </div>
+    `;
+  }).join('');
+}
+function parseBulk() {
+  const text = document.getElementById('bulkInput').value;
+  const parsed = parseEnv(text);
+  if (Object.keys(parsed).length === 0) {
+    toast('No KEY=VALUE pairs found');
+    return;
+  }
+  HOSTNAME_KEYS.forEach(k => { if (parsed[k]) state.reusables.hostnames[k] = parsed[k]; });
+  SMTP_KEYS.forEach(k => { if (parsed[k]) state.reusables.smtp[k] = parsed[k]; });
+  SHARED_KEYS.forEach(k => { if (parsed[k]) state.reusables.shared[k] = parsed[k]; });
+  renderHostnameFields();
+  renderSmtpFields();
+  renderSharedFields();
+  toast(`Parsed ${Object.keys(parsed).length} vars`);
   save();
-  closeHubModal();
+}
+function saveReusables() {
+  save();
+  closeReusablesModal();
   render();
-  toast('Hub config saved');
+  toast('Reusables saved');
 }
 
 // ─── Project CRUD ──────────────────────────────────────────
@@ -511,18 +635,15 @@ function newProject() {
   render();
 }
 function deleteProject(id) {
-  if (!confirm('Delete this project? Cannot undo.')) return;
+  if (!confirm('Delete this project?')) return;
   state.projects = state.projects.filter(p => p.id !== id);
   if (state.currentId === id) state.currentId = state.projects[0]?.id || null;
   save();
   render();
 }
-function selectProject(id) {
-  state.currentId = id;
-  render();
-}
+function selectProject(id) { state.currentId = id; render(); }
 
-// ─── Project Auto-Generation ───────────────────────────────
+// ─── Auto-Generation ───────────────────────────────────────
 function slugify(name) {
   return (name || '').toLowerCase().trim()
     .replace(/[^a-z0-9]+/g, '-')
@@ -539,7 +660,7 @@ function getAutoValue(key, proj) {
     default: return '';
   }
 }
-function getOverrideOrAuto(key, proj) {
+function getFinalValue(key, proj) {
   if (proj.overrides[key] !== undefined && proj.overrides[key] !== '') return proj.overrides[key];
   if (AUTO_KEYS.includes(key)) return getAutoValue(key, proj);
   if (key === 'API_EXTERNAL_URL') return state.urlPattern.replace('{slug}', proj.slug || slugify(proj.name));
@@ -553,43 +674,54 @@ async function checkHealth(url) {
   try {
     await fetch(url, { mode: 'no-cors', cache: 'no-store' });
     return 'live';
-  } catch (e) {
-    return 'dead';
-  }
+  } catch (e) { return 'dead'; }
 }
 async function checkProjectHealth(proj) {
   if (!proj.publicUrls.kong && !proj.publicUrls.studio) return;
-  document.getElementById('healthStatus').innerHTML = '<span class="health-pill checking">⟳ Checking...</span>';
-  const [kongHealth, studioHealth] = await Promise.all([
-    checkHealth(proj.publicUrls.kong),
-    checkHealth(proj.publicUrls.studio)
-  ]);
-  proj.health = { kong: kongHealth, studio: studioHealth };
+  const statusEl = document.getElementById('healthStatus');
+  if (statusEl) statusEl.innerHTML = '<span class="health-pill checking">⟳ Checking...</span>';
+  const [k, s] = await Promise.all([checkHealth(proj.publicUrls.kong), checkHealth(proj.publicUrls.studio)]);
+  proj.health = { kong: k, studio: s };
   proj.healthAt = new Date().toISOString();
   save();
   renderSidebar();
-  renderHealth();
+  renderMain();
 }
 
 // ─── Output Generation ─────────────────────────────────────
 function generateOutput(proj) {
   const lines = [];
-  lines.push('# ── 🔵 Hub Hostnames ──────────────────────────────────────');
+  lines.push('# ── 🔵 Hostnames (from Reusables) ────────────────────────');
   HOSTNAME_KEYS.forEach(k => {
-    const v = state.hub.hostnames[k];
+    const v = state.reusables.hostnames[k];
     if (v) lines.push(`${k}=${v}`);
+    else lines.push(`# ${k}=  ← NOT SET, will use fallback: ${HOSTNAME_DEFAULTS[k]}`);
   });
   lines.push('');
-  lines.push('# ── 🟢 Shared Secrets ────────────────────────────────────');
-  [...Object.keys(state.hub.shared), ...Object.keys(state.hub.other)].sort().forEach(k => {
-    const v = state.hub.shared[k] || state.hub.other[k];
+  lines.push('# ── 🟢 Shared Secrets (from Reusables) ──────────────────');
+  SHARED_KEYS.forEach(k => {
+    const v = state.reusables.shared[k];
     if (v) lines.push(`${k}=${v}`);
+    else if (AUTOGEN_KEYS.includes(k)) lines.push(`# ${k}=  ← empty, Coolify auto-generates`);
+    else if (k === 'OPENAI_API_KEY') lines.push(`# ${k}=  ← optional`);
   });
+  lines.push('');
+  lines.push('# ── 📧 SMTP (from Reusables) ────────────────────────────');
+  const hasSmtp = SMTP_KEYS.some(k => state.reusables.smtp[k]);
+  if (hasSmtp) {
+    SMTP_KEYS.forEach(k => {
+      const v = state.reusables.smtp[k];
+      if (v) lines.push(`${k}=${v}`);
+    });
+  } else {
+    lines.push('# (no SMTP configured — email auth disabled)');
+  }
   lines.push('');
   lines.push('# ── 🟡 Per-Sibling Config ────────────────────────────────');
   [...AUTO_KEYS, ...OVERRIDE_KEYS].forEach(k => {
-    const v = getOverrideOrAuto(k, proj);
+    const v = getFinalValue(k, proj);
     if (v) lines.push(`${k}=${v}`);
+    else if (AUTOGEN_KEYS.includes(k)) lines.push(`# ${k}=  ← empty, Coolify auto-generates`);
   });
   return lines.join('\n');
 }
@@ -598,30 +730,27 @@ function generateOutput(proj) {
 function renderSidebar() {
   const list = document.getElementById('projectList');
   if (state.projects.length === 0) {
-    list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.85rem;text-align:center;">No projects yet.<br>Click "+ New Project" above.</div>';
+    list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.85rem;text-align:center;">No projects yet.<br>Click "+ New Project".</div>';
     return;
   }
   list.innerHTML = state.projects.map(p => {
-    const statusIcon = getStatusIcon(p);
     const isActive = p.id === state.currentId;
     return `
       <div class="project-item ${isActive ? 'active' : ''}" onclick="selectProject('${p.id}')">
         <span class="status-dot" style="background:${getStatusColor(p)};"></span>
         <div style="flex:1;overflow:hidden;">
-          <div class="name">${escapeHtml(p.name)}</div>
-          <div class="meta">${statusIcon} ${p.deployedAt ? 'deployed' : 'draft'}</div>
+          <div class="name">${escHtml(p.name)}</div>
+          <div class="meta">${getStatusIcon(p)} ${p.deployedAt ? 'deployed' : 'draft'}</div>
         </div>
         <button class="secondary" style="padding:2px 6px;font-size:0.7rem;" onclick="event.stopPropagation();deleteProject('${p.id}')">×</button>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 function getStatusColor(p) {
   if (!p.deployedAt) return 'var(--warn)';
   if (p.health.kong === 'live' || p.health.studio === 'live') return 'var(--accent)';
   if (p.health.kong === 'dead' && p.health.studio === 'dead') return 'var(--danger)';
-  if (p.health.kong === 'unknown' && p.health.studio === 'unknown') return 'var(--blue)';
-  return 'var(--muted)';
+  return 'var(--blue)';
 }
 function getStatusIcon(p) {
   if (!p.deployedAt) return '✏️';
@@ -636,10 +765,10 @@ function renderMain() {
     main.innerHTML = `
       <div class="empty-state">
         <h2>No project selected</h2>
-        <p>Create a new project or configure your hub first.</p>
+        <p>Create a new project or set up Reusables first.</p>
         <div class="btn-row" style="justify-content:center;">
           <button onclick="newProject()">+ New Project</button>
-          <button class="secondary" onclick="openHubModal()">Configure Hub</button>
+          <button class="secondary" onclick="openReusablesModal()">Configure Reusables</button>
         </div>
       </div>`;
     return;
@@ -647,30 +776,11 @@ function renderMain() {
   const proj = state.projects.find(p => p.id === state.currentId);
   if (!proj) return;
 
-  // Hostnames section
-  const hostnameRows = HOSTNAME_KEYS.map(k => {
-    const v = state.hub.hostnames[k] || '';
-    const defaultVal = k === 'POSTGRES_HOSTNAME' ? 'supabase-db'
-                     : k === 'MINIO_HOSTNAME' ? 'supabase-minio'
-                     : k === 'ANALYTICS_HOSTNAME' ? 'supabase-analytics' : '';
-    return `
-      <div class="kv-list row">
-        <span class="key">${k}</span>
-        <span class="val ${v ? '' : 'empty'}">${v ? escapeHtml(v) : `⚠️ missing — fallback: <code>${defaultVal}</code>`}</span>
-      </div>`;
-  }).join('');
-  const hostnameCount = HOSTNAME_KEYS.filter(k => state.hub.hostnames[k]).length;
-  const hostnameBadge = `<span class="badge ${hostnameCount === HOSTNAME_KEYS.length ? 'ok' : 'bad'}">${hostnameCount}/${HOSTNAME_KEYS.length} set</span>`;
-
-  // Shared secrets summary
-  const sharedRows = [...new Set([...Object.keys(state.hub.shared), ...SHARED_KEYS])].sort().map(k => {
-    const v = state.hub.shared[k] || '';
-    return `
-      <div class="kv-list row">
-        <span class="key">${k}</span>
-        <span class="val ${v ? '' : 'empty'}">${v ? escapeHtml(maskValue(v)) : '⚠️ not set'}</span>
-      </div>`;
-  }).join('');
+  // Reusables summary (compact)
+  const hostCount = HOSTNAME_KEYS.filter(k => state.reusables.hostnames[k]).length;
+  const smtpCount = SMTP_KEYS.filter(k => state.reusables.smtp[k]).length;
+  const sharedCount = SHARED_KEYS.filter(k => state.reusables.shared[k]).length;
+  const sharedAutogen = SHARED_KEYS.filter(k => !state.reusables.shared[k] && AUTOGEN_KEYS.includes(k)).length;
 
   // Auto fields (yellow)
   const autoFields = AUTO_KEYS.map(k => {
@@ -681,109 +791,110 @@ function renderMain() {
     return `
       <div class="field">
         <label>${k}</label>
-        <input type="text" value="${escapeAttr(val)}" placeholder="auto: ${escapeAttr(auto)}"
+        <input type="text" value="${escAttr(val)}" placeholder="auto: ${escAttr(auto)}"
           class="${isOverridden ? 'overridden' : 'auto'}"
-          oninput="updateField('${k}', this.value, '${proj.id}')">
+          oninput="updateField('${k}', this.value)">
         <span class="hint-icon ${isOverridden ? 'ok' : ''}">${isOverridden ? '✎' : '⚡'}</span>
       </div>`;
   }).join('');
 
-  // Override fields
   const overrideFields = OVERRIDE_KEYS.map(k => {
-    const val = getOverrideOrAuto(k, proj);
+    const val = getFinalValue(k, proj);
     const isAuto = !proj.overrides[k];
+    const isAutogen = AUTOGEN_KEYS.includes(k) && !val;
     return `
       <div class="field">
         <label>${k}</label>
-        <input type="text" value="${escapeAttr(val)}" placeholder="${escapeAttr(getPlaceholder(k, proj))}"
-          oninput="updateField('${k}', this.value, '${proj.id}')">
-        <span class="hint-icon ${isAuto ? 'warn' : 'ok'}">${isAuto ? '⚡' : '✎'}</span>
+        <input type="text" value="${escAttr(val)}" placeholder="${escAttr(getPlaceholder(k, proj))}"
+          class="${isAutogen ? 'empty-warn' : ''}"
+          oninput="updateField('${k}', this.value)">
+        <span class="hint-icon ${isAutogen ? 'danger' : isAuto ? 'warn' : 'ok'}">${isAutogen ? '∅' : isAuto ? '⚡' : '✎'}</span>
       </div>`;
   }).join('');
 
   // Live preview lines
   const previewLines = [...AUTO_KEYS, ...OVERRIDE_KEYS].map(k => {
-    const val = getOverrideOrAuto(k, proj);
+    const val = getFinalValue(k, proj);
     const isOverride = proj.overrides[k] !== undefined && proj.overrides[k] !== '';
     const isAuto = AUTO_KEYS.includes(k) && !isOverride;
-    const cls = !val ? 'empty' : isOverride ? 'override' : isAuto ? 'auto' : '';
-    return `<div class="line"><span class="key">${k}</span><span class="val ${cls}">${val || '(empty)'}</span></div>`;
+    const isAutogen = !val && AUTOGEN_KEYS.includes(k);
+    const cls = isAutogen ? 'autogen' : !val ? 'empty' : isOverride ? 'override' : isAuto ? 'auto' : '';
+    const display = isAutogen ? '(Coolify auto-gen)' : val || '(empty)';
+    return `<div class="line"><span class="key">${k}</span><span class="val ${cls}">${escHtml(display)}</span></div>`;
   }).join('');
 
-  // Health
   const healthPill = (status) => {
-    const cls = status === 'live' ? 'live' : status === 'dead' ? 'dead' : status === 'checking' ? 'checking' : 'unknown';
-    const icon = status === 'live' ? '●' : status === 'dead' ? '✕' : status === 'checking' ? '⟳' : '?';
+    const cls = status === 'live' ? 'live' : status === 'dead' ? 'dead' : 'unknown';
+    const icon = status === 'live' ? '●' : status === 'dead' ? '✕' : '?';
     return `<span class="health-pill ${cls}">${icon} ${status}</span>`;
   };
 
   main.innerHTML = `
     <div class="main-header">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <input type="text" value="${escapeAttr(proj.name)}" 
-               style="background:transparent;border:none;color:var(--text);font-size:1.4rem;font-weight:600;width:300px;"
-               oninput="updateName(this.value, '${proj.id}')">
-        <input type="text" value="${escapeAttr(proj.slug)}" 
+      <div style="display:flex;align-items:center;gap:12px;flex:1;">
+        <input type="text" value="${escAttr(proj.name)}"
+               style="background:transparent;border:none;color:var(--text);font-size:1.4rem;font-weight:600;min-width:200px;"
+               oninput="updateName(this.value)">
+        <input type="text" value="${escAttr(proj.slug)}"
                style="background:transparent;border:none;color:var(--muted);font-size:0.95rem;font-family:'SF Mono',monospace;width:140px;"
-               oninput="updateSlug(this.value, '${proj.id}')">
+               oninput="updateSlug(this.value)">
       </div>
       <div class="actions">
         <button onclick="copyOutput()">Copy Env Vars</button>
-        <button class="secondary" onclick="markDeployed('${proj.id}')">${proj.deployedAt ? 'Update Deploy' : 'Mark Deployed'}</button>
+        <button class="secondary" onclick="markDeployed()">${proj.deployedAt ? '✓ Deployed' : 'Mark Deployed'}</button>
       </div>
     </div>
 
-    <div class="section hostnames">
-      <h3>🔵 Hub Hostnames ${hostnameBadge}</h3>
-      <div class="hint" style="margin-bottom:8px;">${hostnameCount < HOSTNAME_KEYS.length ? '⚠️ Some hostnames missing — sibling will fall back to standalone defaults and fail to connect to hub.' : 'All hostnames configured. Sibling will connect to hub via predefined network.'}</div>
-      <div class="kv-list">${hostnameRows}</div>
-    </div>
-
-    <div class="section shared">
-      <h3>🟢 Shared Secrets <span class="badge ${Object.keys(state.hub.shared).length > 0 ? 'ok' : 'bad'}">${Object.keys(state.hub.shared).length} set</span></h3>
-      <div class="hint" style="margin-bottom:8px;">Copied from hub once, reused across all siblings. Masked for security.</div>
-      <div class="kv-list">${sharedRows}</div>
+    <div class="section">
+      <h3>📦 Reusables Summary <span class="badge ${hostCount === 3 ? 'ok' : 'bad'}">${hostCount}/3 hostnames</span></h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.82rem;color:var(--muted);">
+        <span>🔵 Hostnames: <strong style="color:${hostCount === 3 ? 'var(--accent)' : 'var(--danger)'}">${hostCount}/3</strong></span>
+        <span>🟢 Shared: <strong style="color:var(--accent)">${sharedCount} set</strong>, <span style="color:var(--warn)">${sharedAutogen} auto-gen</span></span>
+        <span>📧 SMTP: <strong style="color:${smtpCount > 0 ? 'var(--accent)' : 'var(--muted)'}">${smtpCount > 0 ? smtpCount + '/6' : 'off'}</strong></span>
+        <button class="secondary" style="margin-left:auto;padding:4px 10px;font-size:0.78rem;" onclick="openReusablesModal()">Edit Reusables</button>
+      </div>
     </div>
 
     <div class="section sibling">
-      <h3>🟡 Per-Sibling Config <span class="badge info">Auto-generated from name</span></h3>
-      <div class="hint" style="margin-bottom:10px;">Yellow fields auto-generate from project name. Edit to override (turns green).</div>
+      <h3>🟡 Per-Sibling Config <span class="badge info">Auto from name</span></h3>
+      <div class="hint" style="margin-bottom:10px;">Yellow fields auto-generate from project name. Edit to override (turns green). ∅ = Coolify auto-generates random.</div>
       ${autoFields}
       <div style="margin-top:14px;"></div>
       ${overrideFields}
       <div style="margin-top:16px;">
-        <h3 style="margin-bottom:6px;">Live Preview</h3>
+        <h3 style="margin-bottom:6px;">Live Preview (per-sibling only)</h3>
         <div class="preview">${previewLines}</div>
       </div>
     </div>
 
     <div class="section urls">
-      <h3>🌐 Public URLs <span class="badge ${proj.publicUrls.kong || proj.publicUrls.studio ? 'ok' : 'info'}">${(proj.publicUrls.kong ? 1 : 0) + (proj.publicUrls.studio ? 1 : 0)}/2 set</span></h3>
-      <div class="hint" style="margin-bottom:10px;">After deploying in Coolify, paste the assigned URLs here for health checking.</div>
+      <h3>🌐 Public URLs <span class="badge ${(proj.publicUrls.kong || proj.publicUrls.studio) ? 'ok' : 'info'}">${(proj.publicUrls.kong?1:0) + (proj.publicUrls.studio?1:0)}/2 set</span></h3>
+      <div class="hint" style="margin-bottom:10px;">After deploying in Coolify, paste the assigned URLs for health checking.</div>
       <div class="field">
         <label>Kong URL</label>
-        <input type="text" value="${escapeAttr(proj.publicUrls.kong)}" placeholder="https://api.${proj.slug}.5sites.co"
-               oninput="updatePublicUrl('kong', this.value, '${proj.id}')">
-        <span id="healthKongPill">${healthPill(proj.health.kong)}</span>
+        <input type="text" value="${escAttr(proj.publicUrls.kong)}" placeholder="https://api.${proj.slug}.5sites.co"
+               oninput="updatePublicUrl('kong', this.value)">
+        ${healthPill(proj.health.kong)}
       </div>
       <div class="field">
         <label>Studio URL</label>
-        <input type="text" value="${escapeAttr(proj.publicUrls.studio)}" placeholder="https://studio.${proj.slug}.5sites.co"
-               oninput="updatePublicUrl('studio', this.value, '${proj.id}')">
-        <span id="healthStudioPill">${healthPill(proj.health.studio)}</span>
+        <input type="text" value="${escAttr(proj.publicUrls.studio)}" placeholder="https://studio.${proj.slug}.5sites.co"
+               oninput="updatePublicUrl('studio', this.value)">
+        ${healthPill(proj.health.studio)}
       </div>
       <div class="btn-row">
-        <button class="warn" onclick="checkProjectHealth(state.projects.find(p=>p.id==='${proj.id}'))">Run Health Check</button>
+        <button class="warn" onclick="checkProjectHealth(getCurrentProj())">Run Health Check</button>
       </div>
-      <div id="healthStatus" style="margin-top:8px;"></div>
+      <div id="healthStatus" style="margin-top:8px;">${proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : ''}</div>
     </div>
 
     <div class="section output">
-      <h3>📋 Output <span class="badge info">Paste to Coolify</span></h3>
+      <h3>📋 Final Output <span class="badge info">Paste to Coolify</span></h3>
+      <div class="hint" style="margin-bottom:10px;">All sections combined. Lines starting with <code>#</code> are comments — Coolify ignores them. Empty <code>SERVICE_PASSWORD_*</code> lines are commented so Coolify auto-generates.</div>
       <textarea class="output" id="outputText" readonly>${generateOutput(proj)}</textarea>
       <div class="btn-row">
         <button onclick="copyOutput()">Copy to Clipboard</button>
-        <button class="secondary" onclick="downloadOutput('${proj.id}')">Download .env</button>
+        <button class="secondary" onclick="downloadOutput()">Download .env</button>
       </div>
     </div>
   `;
@@ -794,54 +905,37 @@ function render() {
   renderMain();
 }
 
-function renderHealth() {
-  const proj = state.projects.find(p => p.id === state.currentId);
-  if (!proj) return;
-  const kongPill = document.getElementById('healthKongPill');
-  const studioPill = document.getElementById('healthStudioPill');
-  if (kongPill) kongPill.innerHTML = `<span class="health-pill ${proj.health.kong === 'live' ? 'live' : proj.health.kong === 'dead' ? 'dead' : 'unknown'}">${proj.health.kong === 'live' ? '● live' : proj.health.kong === 'dead' ? '✕ dead' : '? unknown'}</span>`;
-  if (studioPill) studioPill.innerHTML = `<span class="health-pill ${proj.health.studio === 'live' ? 'live' : proj.health.studio === 'dead' ? 'dead' : 'unknown'}">${proj.health.studio === 'live' ? '● live' : proj.health.studio === 'dead' ? '✕ dead' : '? unknown'}</span>`;
-  document.getElementById('healthStatus').innerHTML = proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : '';
-}
-
 // ─── Project Field Updates ─────────────────────────────────
-function updateName(val, id) {
-  const proj = state.projects.find(p => p.id === id);
-  if (!proj) return;
-  proj.name = val;
-  proj.slug = slugify(val);
+function getCurrentProj() { return state.projects.find(p => p.id === state.currentId); }
+function updateName(val) {
+  const p = getCurrentProj(); if (!p) return;
+  p.name = val;
+  p.slug = slugify(val);
   save();
   renderSidebar();
   renderMain();
 }
-function updateSlug(val, id) {
-  const proj = state.projects.find(p => p.id === id);
-  if (!proj) return;
-  proj.slug = slugify(val);
+function updateSlug(val) {
+  const p = getCurrentProj(); if (!p) return;
+  p.slug = slugify(val);
   save();
   renderMain();
 }
-function updateField(key, val, id) {
-  const proj = state.projects.find(p => p.id === id);
-  if (!proj) return;
-  if (val === '' || val === getAutoValue(key, proj)) {
-    delete proj.overrides[key];
-  } else {
-    proj.overrides[key] = val;
-  }
+function updateField(key, val) {
+  const p = getCurrentProj(); if (!p) return;
+  if (val === '' || val === getAutoValue(key, p)) delete p.overrides[key];
+  else p.overrides[key] = val;
   save();
   renderMain();
 }
-function updatePublicUrl(which, val, id) {
-  const proj = state.projects.find(p => p.id === id);
-  if (!proj) return;
-  proj.publicUrls[which] = val;
+function updatePublicUrl(which, val) {
+  const p = getCurrentProj(); if (!p) return;
+  p.publicUrls[which] = val;
   save();
 }
-function markDeployed(id) {
-  const proj = state.projects.find(p => p.id === id);
-  if (!proj) return;
-  proj.deployedAt = new Date().toISOString();
+function markDeployed() {
+  const p = getCurrentProj(); if (!p) return;
+  p.deployedAt = new Date().toISOString();
   save();
   render();
   toast('Marked as deployed');
@@ -855,50 +949,50 @@ function copyOutput() {
   document.execCommand('copy');
   toast('Copied to clipboard');
 }
-function downloadOutput(id) {
-  const proj = state.projects.find(p => p.id === id);
-  if (!proj) return;
-  const blob = new Blob([generateOutput(proj)], {type: 'text/plain'});
+function downloadOutput() {
+  const p = getCurrentProj(); if (!p) return;
+  const blob = new Blob([generateOutput(p)], {type: 'text/plain'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${proj.slug}.env`;
+  a.download = `${p.slug}.env`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
 // ─── Helpers ───────────────────────────────────────────────
-function maskValue(v) {
-  if (!v) return '';
-  if (v.length < 12) return '••••';
-  return v.slice(0, 4) + '••••' + v.slice(-4);
+function parseEnv(text) {
+  const result = {};
+  (text || '').split('\n').forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#')) return;
+    const eq = line.indexOf('=');
+    if (eq < 0) return;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) val = val.slice(1, -1);
+    result[key] = val;
+  });
+  return result;
 }
 function getPlaceholder(key, proj) {
   if (key === 'API_EXTERNAL_URL') return state.urlPattern.replace('{slug}', proj.slug);
   if (key === 'GOTRUE_SITE_URL') return state.sitePattern.replace('{slug}', proj.slug);
-  if (key === 'SERVICE_PASSWORD_ADMIN') return 'auto-generate random';
+  if (key === 'SERVICE_PASSWORD_ADMIN') return 'empty = Coolify auto-gen';
   if (key === 'ADDITIONAL_REDIRECT_URLS') return state.sitePattern.replace('{slug}', proj.slug) + '/auth/callback';
   return '';
 }
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function escapeAttr(s) { return escapeHtml(s); }
-
+function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s) { return escHtml(s); }
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 1500);
 }
-function clearAll() {
-  if (!confirm('Reset everything? All projects and hub config will be lost.')) return;
-  localStorage.removeItem('supa-sibling-manager');
-  state = {
-    hub: { hostnames: {}, shared: {}, other: {} },
-    projects: [],
-    currentId: null,
-    urlPattern: 'https://api.{slug}.5sites.co',
-    sitePattern: 'https://app.{slug}.5sites.co'
-  };
-  render();
+function resetAll() {
+  if (!confirm('Reset everything? All projects and reusables will be lost.')) return;
+  localStorage.removeItem('supa-sibling-manager-v2');
+  location.reload();
 }
 
 // ─── Init ──────────────────────────────────────────────────
