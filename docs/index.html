@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supabase Sibling Config Helper</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --panel: #1a1d27;
+  --border: #2a2e3a;
+  --text: #e4e6eb;
+  --muted: #8b8f9b;
+  --accent: #3ecf8e;
+  --danger: #ff6b6b;
+  --warn: #fbbf24;
+  --blue: #60a5fa;
+  --purple: #a78bfa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+h1 { font-size: 1.5rem; margin-bottom: 4px; }
+h2 { font-size: 1.1rem; margin: 24px 0 12px; }
+h3 { font-size: 0.95rem; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
+.section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.section.hostnames { border-left: 3px solid var(--blue); }
+.section.shared { border-left: 3px solid var(--accent); }
+.section.sibling { border-left: 3px solid var(--warn); }
+.section.output { border-left: 3px solid var(--purple); }
+textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+textarea.large { min-height: 200px; }
+textarea.medium { min-height: 120px; }
+.input-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.input-row label {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.input-row input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  width: 100%;
+}
+.input-row input:focus { outline: 1px solid var(--accent); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+button {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+button:hover { filter: brightness(1.1); }
+button.secondary { background: var(--border); color: var(--text); }
+button.danger { background: var(--danger); }
+.kv-list {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 0.82rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.kv-list .row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.kv-list .row:last-child { border-bottom: none; }
+.kv-list .key { color: var(--blue); }
+.kv-list .val { color: var(--text); word-break: break-all; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+.badge.set { background: rgba(62, 207, 142, 0.2); color: var(--accent); }
+.badge.unset { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+.hint { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+.copy-btn {
+  background: var(--purple);
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
+.empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+details summary:hover { color: var(--text); }
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+}
+.status-bar .left { color: var(--muted); }
+.status-bar .right { display: flex; gap: 12px; }
+.status-bar .stat { color: var(--text); }
+.status-bar .stat strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>Supabase Sibling Config Helper</h1>
+<p class="subtitle">Paste hub env vars once, generate per-sibling config. All data stored locally in your browser.</p>
+
+<div class="section">
+  <h3>Step 1 — Paste Hub Env Vars</h3>
+  <textarea id="hubInput" class="large" placeholder="Paste KEY=VALUE lines from hub's Coolify Environment tab..."></textarea>
+  <div class="btn-row">
+    <button onclick="parseHub()">Parse &amp; Categorize</button>
+    <button class="secondary" onclick="loadFromStorage()">Load Saved</button>
+    <button class="danger" onclick="clearAll()">Clear All</button>
+  </div>
+  <div class="hint">Tip: In Coolify, go to hub service → Environment tab → copy all. Paste here.</div>
+</div>
+
+<div class="status-bar" id="statusBar" style="display:none;">
+  <span class="left">Status: <span id="statusText">Not parsed</span></span>
+  <span class="right">
+    <span class="stat">Hostnames: <strong id="statHost">0</strong></span>
+    <span class="stat">Shared: <strong id="statShared">0</strong></span>
+    <span class="stat">Sibling: <strong id="statSibling">0</strong></span>
+  </span>
+</div>
+
+<div class="section hostnames" id="hostSection" style="display:none;">
+  <h2>🔵 Hub Hostnames <span class="badge set">Reusable</span></h2>
+  <div class="hint">These point at hub's containers. Same for all siblings. Found from hub's container names.</div>
+  <div id="hostList" class="kv-list"></div>
+</div>
+
+<div class="section shared" id="sharedSection" style="display:none;">
+  <h2>🟢 Shared Secrets <span class="badge set">Reusable</span></h2>
+  <div class="hint">Same across all siblings. Copied from hub once.</div>
+  <div id="sharedList" class="kv-list"></div>
+</div>
+
+<div class="section sibling" id="siblingSection" style="display:none;">
+  <h2>🟡 Per-Sibling Config <span class="badge unset">Unique</span></h2>
+  <div class="hint">Fill these in for the current sibling, then generate output.</div>
+  <div id="siblingForm"></div>
+</div>
+
+<div class="section output" id="outputSection" style="display:none;">
+  <h2>📋 Final Output — Paste to Coolify</h2>
+  <div class="hint">Copy this entire block to sibling's Coolify Environment tab.</div>
+  <textarea id="output" class="large" readonly></textarea>
+  <div class="btn-row">
+    <button class="copy-btn" onclick="copyOutput()">Copy to Clipboard</button>
+    <button class="secondary" onclick="saveToStorage()">Save Current Config</button>
+  </div>
+</div>
+
+<details>
+  <summary>How this works</summary>
+  <div class="hint" style="margin-top:8px;">
+    <p>This page is 100% client-side. No server, no tracking. All data stays in your browser's localStorage.</p>
+    <p>Categorization rules:</p>
+    <ul style="margin-left: 20px; margin-top: 4px;">
+      <li><b>Hostnames</b>: <code>POSTGRES_HOSTNAME</code>, <code>MINIO_HOSTNAME</code>, <code>ANALYTICS_HOSTNAME</code></li>
+      <li><b>Shared secrets</b>: any <code>SERVICE_PASSWORD_*</code>, <code>SERVICE_USER_MINIO</code>, <code>SUPABASEANON_KEY</code>, <code>SUPABASESERVICE_KEY</code>, <code>SECRET_PASSWORD_REALTIME</code></li>
+      <li><b>Per-sibling</b>: <code>POSTGRES_DB</code>, <code>STUDIO_DEFAULT_PROJECT</code>, <code>STORAGE_TENANT_ID</code>, <code>API_EXTERNAL_URL</code>, <code>GOTRUE_SITE_URL</code>, <code>SERVICE_USER_ADMIN</code>, <code>SERVICE_PASSWORD_ADMIN</code></li>
+    </ul>
+    <p style="margin-top:8px;">Other env vars (SMTP_*, OPENAI_API_KEY, etc.) are passed through as shared.</p>
+  </div>
+</details>
+
+<script>
+const HOSTNAME_KEYS = ['POSTGRES_HOSTNAME', 'MINIO_HOSTNAME', 'ANALYTICS_HOSTNAME'];
+const SHARED_KEYS = [
+  'SERVICE_PASSWORD_POSTGRES', 'SERVICE_PASSWORD_JWT',
+  'SERVICE_SUPABASEANON_KEY', 'SERVICE_SUPABASESERVICE_KEY',
+  'SERVICE_PASSWORD_PGMETACRYPTO',
+  'SERVICE_USER_MINIO', 'SERVICE_PASSWORD_MINIO',
+  'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE',
+  'SECRET_PASSWORD_REALTIME',
+  'OPENAI_API_KEY', 'SMTP_ADMIN_EMAIL', 'SMTP_HOST', 'SMTP_PORT',
+  'SMTP_USER', 'SMTP_PASS', 'SMTP_SENDER_NAME'
+];
+const SIBLING_KEYS = [
+  'POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STUDIO_DEFAULT_ORGANIZATION',
+  'STORAGE_TENANT_ID', 'API_EXTERNAL_URL', 'GOTRUE_SITE_URL',
+  'SERVICE_USER_ADMIN', 'SERVICE_PASSWORD_ADMIN',
+  'ADDITIONAL_REDIRECT_URLS'
+];
+
+let parsedHub = { hostnames: {}, shared: {}, other: {} };
+let siblingValues = {};
+
+function parseEnv(text) {
+  const result = {};
+  text.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#')) return;
+    const eq = line.indexOf('=');
+    if (eq < 0) return;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    result[key] = val;
+  });
+  return result;
+}
+
+function categorize(all) {
+  parsedHub = { hostnames: {}, shared: {}, other: {} };
+  Object.entries(all).forEach(([key, val]) => {
+    if (HOSTNAME_KEYS.includes(key)) parsedHub.hostnames[key] = val;
+    else if (SHARED_KEYS.includes(key)) parsedHub.shared[key] = val;
+    else if (!SIBLING_KEYS.includes(key) && !key.startsWith('SERVICE_URL_') && !key.startsWith('SERVICE_FQDN_')) {
+      parsedHub.other[key] = val;
+    }
+  });
+}
+
+function render() {
+  const hasData = Object.keys(parsedHub.hostnames).length > 0 || Object.keys(parsedHub.shared).length > 0;
+  document.getElementById('statusBar').style.display = hasData ? 'flex' : 'none';
+  document.getElementById('hostSection').style.display = hasData ? 'block' : 'none';
+  document.getElementById('sharedSection').style.display = hasData ? 'block' : 'none';
+  document.getElementById('siblingSection').style.display = hasData ? 'block' : 'none';
+  document.getElementById('outputSection').style.display = hasData ? 'block' : 'none';
+  if (!hasData) return;
+
+  const renderKvList = (obj) => {
+    const keys = Object.keys(obj).sort();
+    if (keys.length === 0) return '<div class="empty">(none found in hub env)</div>';
+    return keys.map(k => `<div class="row"><span class="key">${k}</span><span class="val">${obj[k] || '<i style="color:var(--danger)">empty</i>'}</span></div>`).join('');
+  };
+
+  document.getElementById('hostList').innerHTML = renderKvList(parsedHub.hostnames);
+  document.getElementById('sharedList').innerHTML = renderKvList({...parsedHub.shared, ...parsedHub.other});
+
+  document.getElementById('statHost').textContent = Object.keys(parsedHub.hostnames).length;
+  document.getElementById('statShared').textContent = Object.keys(parsedHub.shared).length + Object.keys(parsedHub.other).length;
+  document.getElementById('statSibling').textContent = SIBLING_KEYS.length;
+
+  const form = SIBLING_KEYS.map(key => {
+    const val = siblingValues[key] || '';
+    const placeholder = getPlaceholder(key);
+    return `<div class="input-row"><label>${key}</label><input data-key="${key}" value="${val}" placeholder="${placeholder}" oninput="updateSibling('${key}', this.value)"></div>`;
+  }).join('');
+  document.getElementById('siblingForm').innerHTML = form;
+
+  document.getElementById('statusText').textContent = 'Parsed at ' + new Date().toLocaleTimeString();
+
+  generateOutput();
+}
+
+function getPlaceholder(key) {
+  const placeholders = {
+    POSTGRES_DB: 'aida',
+    STUDIO_DEFAULT_PROJECT: 'Aida',
+    STUDIO_DEFAULT_ORGANIZATION: 'YourOrg',
+    STORAGE_TENANT_ID: 'aida',
+    API_EXTERNAL_URL: 'https://api.aida.5sites.co',
+    GOTRUE_SITE_URL: 'https://app.aida.5sites.co',
+    SERVICE_USER_ADMIN: 'aida_admin',
+    SERVICE_PASSWORD_ADMIN: 'auto-generate-random',
+    ADDITIONAL_REDIRECT_URLS: 'https://app.aida.5sites.co/auth/callback'
+  };
+  return placeholders[key] || '';
+}
+
+function updateSibling(key, val) {
+  siblingValues[key] = val;
+  generateOutput();
+}
+
+function generateOutput() {
+  const lines = [];
+  lines.push('# ── 🔵 Hub Hostnames (from hub) ──────────────────────────');
+  Object.entries(parsedHub.hostnames).sort().forEach(([k,v]) => lines.push(`${k}=${v}`));
+  lines.push('');
+  lines.push('# ── 🟢 Shared Secrets (from hub) ────────────────────────');
+  Object.entries(parsedHub.shared).sort().forEach(([k,v]) => lines.push(`${k}=${v}`));
+  Object.entries(parsedHub.other).sort().forEach(([k,v]) => lines.push(`${k}=${v}`));
+  lines.push('');
+  lines.push('# ── 🟡 Per-Sibling Config (set above) ───────────────────');
+  SIBLING_KEYS.forEach(k => {
+    const v = siblingValues[k];
+    if (v) lines.push(`${k}=${v}`);
+  });
+  document.getElementById('output').value = lines.join('\n');
+}
+
+function parseHub() {
+  const text = document.getElementById('hubInput').value;
+  if (!text.trim()) {
+    alert('Paste hub env vars first');
+    return;
+  }
+  const all = parseEnv(text);
+  if (Object.keys(all).length === 0) {
+    alert('No KEY=VALUE pairs found. Check format.');
+    return;
+  }
+  categorize(all);
+  siblingValues = {};
+  render();
+}
+
+function copyOutput() {
+  const out = document.getElementById('output');
+  out.select();
+  document.execCommand('copy');
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function saveToStorage() {
+  const data = { parsedHub, siblingValues, savedAt: new Date().toISOString() };
+  localStorage.setItem('supabase-sibling-helper', JSON.stringify(data));
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = 'Saved!';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function loadFromStorage() {
+  const raw = localStorage.getItem('supabase-sibling-helper');
+  if (!raw) {
+    alert('No saved config found');
+    return;
+  }
+  try {
+    const data = JSON.parse(raw);
+    parsedHub = data.parsedHub || { hostnames: {}, shared: {}, other: {} };
+    siblingValues = data.siblingValues || {};
+    render();
+  } catch (e) {
+    alert('Failed to load saved config: ' + e.message);
+  }
+}
+
+function clearAll() {
+  if (!confirm('Clear all data including localStorage?')) return;
+  localStorage.removeItem('supabase-sibling-helper');
+  parsedHub = { hostnames: {}, shared: {}, other: {} };
+  siblingValues = {};
+  document.getElementById('hubInput').value = '';
+  render();
+}
+
+loadFromStorage();
+</script>
+
+</body>
+</html>
