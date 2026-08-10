@@ -5,6 +5,28 @@
 # port: 8000
 
 services:
+  db-init:
+    image: 'postgres:15-alpine'
+    restart: 'no'
+    environment:
+      - PGPASSWORD=${SERVICE_PASSWORD_POSTGRES}
+    entrypoint:
+      - sh
+      - '-c'
+      - |
+        echo "Waiting for hub Postgres at $$POSTGRES_HOSTNAME..."
+        until pg_isready -h "$${POSTGRES_HOSTNAME:-supabase-db}" -p "$${POSTGRES_PORT:-5432}" -U postgres; do
+          sleep 2
+        done
+        echo "Hub PG reachable. Checking if database $$POSTGRES_DB exists..."
+        if psql -h "$${POSTGRES_HOSTNAME:-supabase-db}" -p "$${POSTGRES_PORT:-5432}" -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$${POSTGRES_DB:-postgres}'" | grep -q 1; then
+          echo "Database $$POSTGRES_DB already exists. Skipping creation."
+        else
+          echo "Creating database $$POSTGRES_DB..."
+          psql -h "$${POSTGRES_HOSTNAME:-supabase-db}" -p "$${POSTGRES_PORT:-5432}" -U postgres -c "CREATE DATABASE \"$${POSTGRES_DB:-postgres}\";"
+          echo "Database $$POSTGRES_DB created."
+        fi
+
   supabase-kong:
     image: 'kong/kong:3.9.1'
     entrypoint: /home/kong/kong-entrypoint.sh
@@ -14,7 +36,8 @@ services:
       timeout: 5s
       retries: 5
     environment:
-      - SERVICE_URL_SUPABASEKONG_8000
+      - 'SERVICE_FQDN_SUPABASEKONG_8000=${KONG_FQDN}'
+      - 'SERVICE_URL_SUPABASEKONG_8000=${KONG_FQDN}'
       - 'KONG_PORT_MAPS=443:8000'
       - 'JWT_SECRET=${SERVICE_PASSWORD_JWT}'
       - KONG_DATABASE=off
@@ -49,7 +72,8 @@ services:
       interval: 5s
       retries: 3
     environment:
-      - SERVICE_URL_SUPABASESTUDIO_3000
+      - 'SERVICE_FQDN_SUPABASESTUDIO_3000=${STUDIO_FQDN}'
+      - 'SERVICE_URL_SUPABASESTUDIO_3000=${STUDIO_FQDN}'
       - HOSTNAME=0.0.0.0
       - 'STUDIO_PG_META_URL=http://supabase-meta:8080'
       - 'POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}'
@@ -85,6 +109,9 @@ services:
 
   supabase-rest:
     image: 'postgrest/postgrest:v14.6'
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
     environment:
       - 'PGRST_DB_URI=postgres://authenticator:${SERVICE_PASSWORD_POSTGRES}@${POSTGRES_HOSTNAME:-supabase-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}'
       - 'PGRST_DB_SCHEMAS=${PGRST_DB_SCHEMAS:-public,storage,graphql_public}'
@@ -100,6 +127,9 @@ services:
 
   supabase-auth:
     image: 'supabase/gotrue:v2.186.0'
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
     healthcheck:
       test: [CMD, wget, '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:9999/health']
       timeout: 5s
@@ -137,6 +167,9 @@ services:
 
   realtime-dev:
     image: 'supabase/realtime:v2.76.5'
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
     healthcheck:
       test: [CMD, curl, '-sSfL', '--head', '-o', /dev/null, '-H', 'Authorization: Bearer ${SERVICE_SUPABASEANON_KEY}', 'http://127.0.0.1:4000/api/tenants/realtime-dev/health']
       timeout: 5s

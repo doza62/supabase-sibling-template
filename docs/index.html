@@ -529,7 +529,7 @@ const SETTINGS_DEFAULTS = {
   KONG_STORAGE_RESPONSE_BUFFERING: 'false'
 };
 const SETTINGS_KEYS = Object.keys(SETTINGS_DEFAULTS);
-const AUTO_KEYS = ['POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STORAGE_TENANT_ID', 'SERVICE_USER_ADMIN'];
+const AUTO_KEYS = ['POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STORAGE_TENANT_ID', 'SERVICE_USER_ADMIN', 'KONG_FQDN', 'STUDIO_FQDN'];
 const OVERRIDE_KEYS = ['API_EXTERNAL_URL', 'GOTRUE_SITE_URL', 'SERVICE_PASSWORD_ADMIN', 'ADDITIONAL_REDIRECT_URLS'];
 const AUTOGEN_KEYS = ['SERVICE_PASSWORD_ADMIN', 'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE', 'SECRET_PASSWORD_REALTIME'];
 
@@ -730,6 +730,8 @@ function getAutoValue(key, proj) {
     case 'STUDIO_DEFAULT_PROJECT': return proj.name;
     case 'STORAGE_TENANT_ID': return slug;
     case 'SERVICE_USER_ADMIN': return `${slug}_admin`;
+    case 'KONG_FQDN': return state.urlPatternKong.replace('{slug}', slug);
+    case 'STUDIO_FQDN': return state.urlPatternStudio.replace('{slug}', slug);
     default: return '';
   }
 }
