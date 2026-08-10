@@ -767,12 +767,6 @@ async function checkProjectHealth(proj) {
 // ─── Output Generation ─────────────────────────────────────
 function generateOutput(proj) {
   const lines = [];
-  const slug = proj.slug || slugify(proj.name);
-  const kongFqdn = (proj.overrides.KONG_FQDN || state.urlPatternKong.replace('{slug}', slug)).replace(/^https?:\/\//, '');
-  const kongUrl = `https://${kongFqdn}`;
-  const studioFqdn = (proj.overrides.STUDIO_FQDN || state.urlPatternStudio.replace('{slug}', slug)).replace(/^https?:\/\//, '');
-  const studioUrl = `https://${studioFqdn}`;
-
   lines.push('# ── 🔵 Hostnames (from Reusables) ────────────────────────');
   HOSTNAME_KEYS.forEach(k => {
     const v = state.reusables.hostnames[k];
@@ -802,16 +796,6 @@ function generateOutput(proj) {
     const v = getFinalValue(k, proj);
     lines.push(`${k}=${v || ''}`);
   });
-  lines.push('');
-  lines.push('# ── 🌐 Coolify Auto-Magic (derived from KONG_FQDN / STUDIO_FQDN) ──');
-  lines.push(`SERVICE_FQDN_SUPABASEKONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASEKONG=${kongUrl}`);
-  lines.push(`SERVICE_FQDN_SUPABASEKONG_8000=${kongFqdn}:8000`);
-  lines.push(`SERVICE_URL_SUPABASEKONG_8000=${kongUrl}:8000`);
-  lines.push(`SERVICE_FQDN_SUPABASE_STUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_STUDIO=${studioUrl}`);
-  lines.push(`SERVICE_FQDN_SUPABASE_STUDIO_3000=${studioFqdn}:3000`);
-  lines.push(`SERVICE_URL_SUPABASE_STUDIO_3000=${studioUrl}:3000`);
   return lines.join('\n');
 }
 
