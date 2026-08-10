@@ -796,6 +796,22 @@ function generateOutput(proj) {
     const v = getFinalValue(k, proj);
     lines.push(`${k}=${v || ''}`);
   });
+  lines.push('');
+  lines.push('# ── 🌐 Service URLs (from FQDNs) ────────────────────────');
+  const kongFqdnRaw = getFinalValue('KONG_FQDN', proj);
+  const kongFqdn = kongFqdnRaw.replace(/^https?:\/\//, '');
+  const kongUrl = kongFqdn ? `https://${kongFqdn}` : '';
+  const studioFqdnRaw = getFinalValue('STUDIO_FQDN', proj);
+  const studioFqdn = studioFqdnRaw.replace(/^https?:\/\//, '');
+  const studioUrl = studioFqdn ? `https://${studioFqdn}` : '';
+  lines.push(`SERVICE_FQDN_SUPABASEKONG=${kongFqdn}`);
+  lines.push(`SERVICE_URL_SUPABASEKONG=${kongUrl}`);
+  lines.push(`SERVICE_FQDN_SUPABASEKONG_8000=${kongFqdn ? kongFqdn + ':8000' : ''}`);
+  lines.push(`SERVICE_URL_SUPABASEKONG_8000=${kongUrl ? kongUrl + ':8000' : ''}`);
+  lines.push(`SERVICE_FQDN_SUPABASESTUDIO=${studioFqdn}`);
+  lines.push(`SERVICE_URL_SUPABASESTUDIO=${studioUrl}`);
+  lines.push(`SERVICE_FQDN_SUPABASESTUDIO_3000=${studioFqdn ? studioFqdn + ':3000' : ''}`);
+  lines.push(`SERVICE_URL_SUPABASESTUDIO_3000=${studioUrl ? studioUrl + ':3000' : ''}`);
   return lines.join('\n');
 }
 
