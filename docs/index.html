@@ -769,41 +769,31 @@ function generateOutput(proj) {
   HOSTNAME_KEYS.forEach(k => {
     const v = state.reusables.hostnames[k];
     if (v) lines.push(`${k}=${v}`);
-    else lines.push(`# ${k}=  ← NOT SET, will use fallback: ${HOSTNAME_DEFAULTS[k]}`);
+    else lines.push(`${k}=`);
   });
   lines.push('');
   lines.push('# ── 🟢 Shared Secrets (from Reusables) ──────────────────');
   SHARED_KEYS.forEach(k => {
     const v = state.reusables.shared[k];
-    if (v) lines.push(`${k}=${v}`);
-    else if (AUTOGEN_KEYS.includes(k)) lines.push(`# ${k}=  ← empty, Coolify auto-generates`);
-    else if (k === 'OPENAI_API_KEY') lines.push(`# ${k}=  ← optional`);
+    lines.push(`${k}=${v || ''}`);
   });
   lines.push('');
   lines.push('# ── ⚙️ Settings (from Reusables) ─────────────────────────');
   SETTINGS_KEYS.forEach(k => {
     const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
-    const isDefault = v === SETTINGS_DEFAULTS[k];
-    if (isDefault) lines.push(`${k}=${v}  # default`);
-    else lines.push(`${k}=${v}  # customized`);
+    lines.push(`${k}=${v || ''}`);
   });
   lines.push('');
   lines.push('# ── 📧 SMTP (from Reusables) ────────────────────────────');
-  const hasSmtp = SMTP_KEYS.some(k => state.reusables.smtp[k]);
-  if (hasSmtp) {
-    SMTP_KEYS.forEach(k => {
-      const v = state.reusables.smtp[k];
-      if (v) lines.push(`${k}=${v}`);
-    });
-  } else {
-    lines.push('# (no SMTP configured — email auth disabled)');
-  }
+  SMTP_KEYS.forEach(k => {
+    const v = state.reusables.smtp[k];
+    lines.push(`${k}=${v || ''}`);
+  });
   lines.push('');
   lines.push('# ── 🟡 Per-Sibling Config ────────────────────────────────');
   [...AUTO_KEYS, ...OVERRIDE_KEYS].forEach(k => {
     const v = getFinalValue(k, proj);
-    if (v) lines.push(`${k}=${v}`);
-    else if (AUTOGEN_KEYS.includes(k)) lines.push(`# ${k}=  ← empty, Coolify auto-generates`);
+    lines.push(`${k}=${v || ''}`);
   });
   return lines.join('\n');
 }
