@@ -533,8 +533,9 @@ let state = {
   },
   projects: [],
   currentId: null,
-  urlPattern: 'https://api.{slug}.5sites.co',
-  sitePattern: 'https://app.{slug}.5sites.co'
+  urlPatternKong: 'https://{slug}-db.cool.5sites.co',
+  urlPatternStudio: 'https://{slug}.cool.5sites.co',
+  urlPatternApp: 'https://{slug}-app.cool.5sites.co'
 };
 
 // Init shared keys with empty
@@ -720,8 +721,9 @@ function getAutoValue(key, proj) {
 function getFinalValue(key, proj) {
   if (proj.overrides[key] !== undefined && proj.overrides[key] !== '') return proj.overrides[key];
   if (AUTO_KEYS.includes(key)) return getAutoValue(key, proj);
-  if (key === 'API_EXTERNAL_URL') return state.urlPattern.replace('{slug}', proj.slug || slugify(proj.name));
-  if (key === 'GOTRUE_SITE_URL') return state.sitePattern.replace('{slug}', proj.slug || slugify(proj.name));
+  const slug = proj.slug || slugify(proj.name);
+  if (key === 'API_EXTERNAL_URL') return state.urlPatternKong.replace('{slug}', slug);
+  if (key === 'GOTRUE_SITE_URL') return state.urlPatternApp.replace('{slug}', slug);
   return '';
 }
 
@@ -945,16 +947,16 @@ function renderMain() {
 
     <div class="section urls">
       <h3>🌐 Public URLs <span class="badge ${(proj.publicUrls.kong || proj.publicUrls.studio) ? 'ok' : 'info'}">${(proj.publicUrls.kong?1:0) + (proj.publicUrls.studio?1:0)}/2 set</span></h3>
-      <div class="hint" style="margin-bottom:10px;">After deploying in Coolify, paste the assigned URLs for health checking.</div>
+      <div class="hint" style="margin-bottom:10px;">After deploying in Coolify, paste the assigned URLs for health checking. <strong>Important:</strong> edit these FQDNs in Coolify UI (service → Domains) to match patterns below — auto-generated URLs are ugly.</div>
       <div class="field">
         <label>Kong URL</label>
-        <input type="text" value="${escAttr(proj.publicUrls.kong)}" placeholder="https://api.${proj.slug}.5sites.co"
+        <input type="text" data-role="url" data-key="kong" value="${escAttr(proj.publicUrls.kong)}" placeholder="${escAttr(state.urlPatternKong.replace('{slug}', proj.slug))}"
                oninput="updatePublicUrl('kong', this.value)">
         ${healthPill(proj.health.kong)}
       </div>
       <div class="field">
         <label>Studio URL</label>
-        <input type="text" value="${escAttr(proj.publicUrls.studio)}" placeholder="https://studio.${proj.slug}.5sites.co"
+        <input type="text" data-role="url" data-key="studio" value="${escAttr(proj.publicUrls.studio)}" placeholder="${escAttr(state.urlPatternStudio.replace('{slug}', proj.slug))}"
                oninput="updatePublicUrl('studio', this.value)">
         ${healthPill(proj.health.studio)}
       </div>
@@ -962,6 +964,19 @@ function renderMain() {
         <button class="warn" onclick="checkProjectHealth(getCurrentProj())">Run Health Check</button>
       </div>
       <div id="healthStatus" style="margin-top:8px;">${proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : ''}</div>
+    </div>
+
+    <div class="section">
+      <h3>🚀 Post-Deploy Steps <span class="badge info">Coolify UI</span></h3>
+      <div class="hint" style="margin-bottom:10px;">After pasting env vars and deploying, do these in Coolify UI for clean URLs + proper auth:</div>
+      <ol style="margin-left:20px;font-size:0.85rem;line-height:1.8;">
+        <li><strong>Set Kong FQDN</strong> — Coolify → Service → <code>supabase-kong</code> → Domains → set to <code>${escHtml(state.urlPatternKong.replace('{slug}', proj.slug))}</code></li>
+        <li><strong>Set Studio FQDN</strong> — Coolify → Service → <code>supabase-studio</code> → Domains → set to <code>${escHtml(state.urlPatternStudio.replace('{slug}', proj.slug))}</code></li>
+        <li><strong>Create Database</strong> — Run in hub's PG: <code>CREATE DATABASE ${escHtml(proj.slug)};</code></li>
+        <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
+        <li><strong>Verify</strong> — Open Studio URL, should see Supabase login</li>
+        <li><strong>Paste URLs above</strong> — Copy from Coolify, paste in fields above for health checks</li>
+      </ol>
     </div>
 
     <div class="section output">
@@ -1061,10 +1076,11 @@ function parseEnv(text) {
   return result;
 }
 function getPlaceholder(key, proj) {
-  if (key === 'API_EXTERNAL_URL') return state.urlPattern.replace('{slug}', proj.slug);
-  if (key === 'GOTRUE_SITE_URL') return state.sitePattern.replace('{slug}', proj.slug);
+  const slug = proj.slug || slugify(proj.name);
+  if (key === 'API_EXTERNAL_URL') return state.urlPatternKong.replace('{slug}', slug);
+  if (key === 'GOTRUE_SITE_URL') return state.urlPatternApp.replace('{slug}', slug);
   if (key === 'SERVICE_PASSWORD_ADMIN') return 'empty = Coolify auto-gen';
-  if (key === 'ADDITIONAL_REDIRECT_URLS') return state.sitePattern.replace('{slug}', proj.slug) + '/auth/callback';
+  if (key === 'ADDITIONAL_REDIRECT_URLS') return state.urlPatternApp.replace('{slug}', slug) + '/auth/callback';
   return '';
 }
 function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
