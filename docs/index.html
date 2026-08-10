@@ -548,8 +548,8 @@ let state = {
   },
   projects: [],
   currentId: null,
-  urlPatternKong: 'https://{slug}-db.cool.5sites.co',
-  urlPatternStudio: 'https://{slug}.cool.5sites.co',
+  urlPatternKong: 'https://{slug}-db.cool.5sites.co:8000',
+  urlPatternStudio: 'https://{slug}.cool.5sites.co:3000',
   urlPatternApp: 'https://{slug}-app.cool.5sites.co'
 };
 
@@ -797,25 +797,21 @@ function generateOutput(proj) {
     lines.push(`${k}=${v || ''}`);
   });
   lines.push('');
-  lines.push('# ── 🌐 Service URLs (from FQDNs) ────────────────────────');
+  lines.push('# ── 🌐 Service URLs (from FQDNs, Coolify format with port) ──');
   const kongFqdnRaw = getFinalValue('KONG_FQDN', proj);
-  const kongFqdn = kongFqdnRaw.replace(/^https?:\/\//, '');
-  const kongUrl = kongFqdn ? `https://${kongFqdn}` : '';
   const studioFqdnRaw = getFinalValue('STUDIO_FQDN', proj);
+  // Strip protocol for FQDN-only vars
+  const kongFqdn = kongFqdnRaw.replace(/^https?:\/\//, '');
   const studioFqdn = studioFqdnRaw.replace(/^https?:\/\//, '');
-  const studioUrl = studioFqdn ? `https://${studioFqdn}` : '';
+  // Single var per service, FQDN includes port per Coolify format
   lines.push(`SERVICE_FQDN_SUPABASEKONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASEKONG=${kongUrl}`);
-  lines.push(`SERVICE_FQDN_SUPABASEKONG_8000=${kongFqdn ? kongFqdn + ':8000' : ''}`);
-  lines.push(`SERVICE_URL_SUPABASEKONG_8000=${kongUrl ? kongUrl + ':8000' : ''}`);
+  lines.push(`SERVICE_URL_SUPABASEKONG=${kongFqdnRaw}`);
   lines.push(`SERVICE_FQDN_SUPABASE_KONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_KONG=${kongUrl}`);
+  lines.push(`SERVICE_URL_SUPABASE_KONG=${kongFqdnRaw}`);
   lines.push(`SERVICE_FQDN_SUPABASESTUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASESTUDIO=${studioUrl}`);
-  lines.push(`SERVICE_FQDN_SUPABASESTUDIO_3000=${studioFqdn ? studioFqdn + ':3000' : ''}`);
-  lines.push(`SERVICE_URL_SUPABASESTUDIO_3000=${studioUrl ? studioUrl + ':3000' : ''}`);
+  lines.push(`SERVICE_URL_SUPABASESTUDIO=${studioFqdnRaw}`);
   lines.push(`SERVICE_FQDN_SUPABASE_STUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_STUDIO=${studioUrl}`);
+  lines.push(`SERVICE_URL_SUPABASE_STUDIO=${studioFqdnRaw}`);
   return lines.join('\n');
 }
 
