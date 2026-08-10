@@ -434,6 +434,7 @@ button.warn { background: var(--warn); color: var(--bg); }
       <button class="modal-tab" onclick="switchTab('hostnames')">🔵 Hostnames</button>
       <button class="modal-tab" onclick="switchTab('smtp')">📧 SMTP</button>
       <button class="modal-tab" onclick="switchTab('shared')">🟢 Shared Secrets</button>
+      <button class="modal-tab" onclick="switchTab('settings')">⚙️ Settings</button>
     </div>
 
     <div class="modal-pane active" id="pane-bulk">
@@ -463,6 +464,12 @@ button.warn { background: var(--warn); color: var(--bg); }
       <div id="sharedFields"></div>
     </div>
 
+    <div class="modal-pane" id="pane-settings">
+      <h3 style="margin-bottom:10px;">⚙️ Settings &amp; Flags</h3>
+      <div class="hint" style="margin-bottom:10px;">Defaults are sensible. Edit if you need custom behavior. Changes apply to all siblings.</div>
+      <div id="settingsFields"></div>
+    </div>
+
     <div class="btn-row" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
       <button onclick="saveReusables()">Save Reusables</button>
       <button class="secondary" onclick="closeReusablesModal()">Cancel</button>
@@ -483,8 +490,30 @@ const SHARED_KEYS = [
   'SERVICE_USER_MINIO', 'SERVICE_PASSWORD_MINIO',
   'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE',
   'SECRET_PASSWORD_REALTIME',
-  'OPENAI_API_KEY'
+  'OPENAI_API_KEY',
+  'SERVICE_ROLE_KEY_ASYMMETRIC', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'ANON_KEY_ASYMMETRIC'
 ];
+const SETTINGS_DEFAULTS = {
+  POSTGRES_PORT: '5432',
+  PGRST_DB_SCHEMAS: 'public,storage,graphql_public',
+  PGRST_DB_MAX_ROWS: '1000',
+  PGRST_DB_EXTRA_SEARCH_PATH: 'public',
+  STUDIO_DEFAULT_ORGANIZATION: 'Default Organization',
+  JWT_EXPIRY: '3600',
+  DISABLE_SIGNUP: 'false',
+  ENABLE_EMAIL_SIGNUP: 'true',
+  ENABLE_ANONYMOUS_USERS: 'false',
+  ENABLE_EMAIL_AUTOCONFIRM: 'false',
+  MAILER_URLPATHS_INVITE: '/auth/v1/verify',
+  MAILER_URLPATHS_CONFIRMATION: '/auth/v1/verify',
+  MAILER_URLPATHS_RECOVERY: '/auth/v1/verify',
+  MAILER_URLPATHS_EMAIL_CHANGE: '/auth/v1/verify',
+  ENABLE_PHONE_SIGNUP: 'true',
+  ENABLE_PHONE_AUTOCONFIRM: 'true',
+  FUNCTIONS_VERIFY_JWT: 'false',
+  IMGPROXY_AUTO_WEBP: 'true'
+};
+const SETTINGS_KEYS = Object.keys(SETTINGS_DEFAULTS);
 const AUTO_KEYS = ['POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STORAGE_TENANT_ID', 'SERVICE_USER_ADMIN'];
 const OVERRIDE_KEYS = ['API_EXTERNAL_URL', 'GOTRUE_SITE_URL', 'SERVICE_PASSWORD_ADMIN', 'ADDITIONAL_REDIRECT_URLS'];
 const AUTOGEN_KEYS = ['SERVICE_PASSWORD_ADMIN', 'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE', 'SECRET_PASSWORD_REALTIME'];
@@ -499,7 +528,8 @@ let state = {
   reusables: {
     hostnames: {POSTGRES_HOSTNAME: '', MINIO_HOSTNAME: '', ANALYTICS_HOSTNAME: ''},
     smtp: {SMTP_HOST: '', SMTP_PORT: '587', SMTP_USER: '', SMTP_PASS: '', SMTP_ADMIN_EMAIL: '', SMTP_SENDER_NAME: ''},
-    shared: {}
+    shared: {},
+    settings: {...SETTINGS_DEFAULTS}
   },
   projects: [],
   currentId: null,
@@ -526,7 +556,8 @@ function load() {
           ...(parsed.reusables || {}),
           hostnames: {...state.reusables.hostnames, ...((parsed.reusables||{}).hostnames||{})},
           smtp: {...state.reusables.smtp, ...((parsed.reusables||{}).smtp||{})},
-          shared: {...state.reusables.shared, ...((parsed.reusables||{}).shared||{})}
+          shared: {...state.reusables.shared, ...((parsed.reusables||{}).shared||{})},
+          settings: {...state.reusables.settings, ...((parsed.reusables||{}).settings||{})}
         }
       };
     } catch(e) { console.warn('Load failed', e); }
@@ -536,12 +567,13 @@ function load() {
 // ─── Reusables Modal ───────────────────────────────────────
 function openReusablesModal() {
   // Pre-fill textarea with current reusables
-  const all = {...state.reusables.hostnames, ...state.reusables.smtp, ...state.reusables.shared};
+  const all = {...state.reusables.hostnames, ...state.reusables.smtp, ...state.reusables.shared, ...state.reusables.settings};
   const text = Object.entries(all).filter(([k,v]) => v).map(([k,v]) => `${k}=${v}`).join('\n');
   document.getElementById('bulkInput').value = text;
   renderHostnameFields();
   renderSmtpFields();
   renderSharedFields();
+  renderSettingsFields();
   document.getElementById('reusablesModal').classList.add('show');
 }
 function closeReusablesModal() {
@@ -593,6 +625,20 @@ function renderSharedFields() {
     `;
   }).join('');
 }
+function renderSettingsFields() {
+  document.getElementById('settingsFields').innerHTML = SETTINGS_KEYS.map(k => {
+    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
+    const isDefault = v === SETTINGS_DEFAULTS[k];
+    return `
+      <div class="field-row">
+        <label>${k}</label>
+        <input type="text" value="${escAttr(v)}" placeholder="default: ${escAttr(SETTINGS_DEFAULTS[k])}"
+               class="${isDefault ? '' : 'overridden'}"
+               oninput="state.reusables.settings['${k}']=this.value; this.className=this.value===SETTINGS_DEFAULTS['${k}']?'':'overridden';">
+      </div>
+    `;
+  }).join('');
+}
 function parseBulk() {
   const text = document.getElementById('bulkInput').value;
   const parsed = parseEnv(text);
@@ -603,9 +649,11 @@ function parseBulk() {
   HOSTNAME_KEYS.forEach(k => { if (parsed[k]) state.reusables.hostnames[k] = parsed[k]; });
   SMTP_KEYS.forEach(k => { if (parsed[k]) state.reusables.smtp[k] = parsed[k]; });
   SHARED_KEYS.forEach(k => { if (parsed[k]) state.reusables.shared[k] = parsed[k]; });
+  SETTINGS_KEYS.forEach(k => { if (parsed[k]) state.reusables.settings[k] = parsed[k]; });
   renderHostnameFields();
   renderSmtpFields();
   renderSharedFields();
+  renderSettingsFields();
   toast(`Parsed ${Object.keys(parsed).length} vars`);
   save();
 }
@@ -715,6 +763,14 @@ function generateOutput(proj) {
     else if (k === 'OPENAI_API_KEY') lines.push(`# ${k}=  ← optional`);
   });
   lines.push('');
+  lines.push('# ── ⚙️ Settings (from Reusables) ─────────────────────────');
+  SETTINGS_KEYS.forEach(k => {
+    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
+    const isDefault = v === SETTINGS_DEFAULTS[k];
+    if (isDefault) lines.push(`${k}=${v}  # default`);
+    else lines.push(`${k}=${v}  # customized`);
+  });
+  lines.push('');
   lines.push('# ── 📧 SMTP (from Reusables) ────────────────────────────');
   const hasSmtp = SMTP_KEYS.some(k => state.reusables.smtp[k]);
   if (hasSmtp) {
@@ -799,6 +855,7 @@ function renderMain() {
   const smtpCount = SMTP_KEYS.filter(k => state.reusables.smtp[k]).length;
   const sharedCount = SHARED_KEYS.filter(k => state.reusables.shared[k]).length;
   const sharedAutogen = SHARED_KEYS.filter(k => !state.reusables.shared[k] && AUTOGEN_KEYS.includes(k)).length;
+  const settingsCustom = SETTINGS_KEYS.filter(k => state.reusables.settings[k] && state.reusables.settings[k] !== SETTINGS_DEFAULTS[k]).length;
 
   // Auto fields (yellow)
   const autoFields = AUTO_KEYS.map(k => {
@@ -868,6 +925,7 @@ function renderMain() {
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.82rem;color:var(--muted);">
         <span>🔵 Hostnames: <strong style="color:${hostCount === 3 ? 'var(--accent)' : 'var(--danger)'}">${hostCount}/3</strong></span>
         <span>🟢 Shared: <strong style="color:var(--accent)">${sharedCount} set</strong>, <span style="color:var(--warn)">${sharedAutogen} auto-gen</span></span>
+        <span>⚙️ Settings: <strong style="color:var(--accent)">${settingsCustom} customized</strong></span>
         <span>📧 SMTP: <strong style="color:${smtpCount > 0 ? 'var(--accent)' : 'var(--muted)'}">${smtpCount > 0 ? smtpCount + '/6' : 'off'}</strong></span>
         <button class="secondary" style="margin-left:auto;padding:4px 10px;font-size:0.78rem;" onclick="openReusablesModal()">Edit Reusables</button>
       </div>
