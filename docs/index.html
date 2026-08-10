@@ -808,10 +808,14 @@ function generateOutput(proj) {
   lines.push(`SERVICE_URL_SUPABASEKONG=${kongUrl}`);
   lines.push(`SERVICE_FQDN_SUPABASEKONG_8000=${kongFqdn ? kongFqdn + ':8000' : ''}`);
   lines.push(`SERVICE_URL_SUPABASEKONG_8000=${kongUrl ? kongUrl + ':8000' : ''}`);
+  lines.push(`SERVICE_FQDN_SUPABASE_KONG=${kongFqdn}`);
+  lines.push(`SERVICE_URL_SUPABASE_KONG=${kongUrl}`);
   lines.push(`SERVICE_FQDN_SUPABASESTUDIO=${studioFqdn}`);
   lines.push(`SERVICE_URL_SUPABASESTUDIO=${studioUrl}`);
   lines.push(`SERVICE_FQDN_SUPABASESTUDIO_3000=${studioFqdn ? studioFqdn + ':3000' : ''}`);
   lines.push(`SERVICE_URL_SUPABASESTUDIO_3000=${studioUrl ? studioUrl + ':3000' : ''}`);
+  lines.push(`SERVICE_FQDN_SUPABASE_STUDIO=${studioFqdn}`);
+  lines.push(`SERVICE_URL_SUPABASE_STUDIO=${studioUrl}`);
   return lines.join('\n');
 }
 
