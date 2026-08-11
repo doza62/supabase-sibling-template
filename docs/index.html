@@ -1048,6 +1048,17 @@ function generateOutput(proj) {
     overrides['STORAGE_TENANT_ID'] = proj.slug;
     overrides['STUDIO_DEFAULT_PROJECT'] = proj.name;
 
+    // Per-sibling FQDNs — each sibling needs its own Kong URL, not the hub's
+    const slug = proj.slug || slugify(proj.name);
+    const kongUrlRaw = state.urlPatternKong.replace('{slug}', slug);
+    const kongFqdnRaw = kongUrlRaw.replace(/^https?:\/\//, '');
+    const kongBaseFqdn = kongFqdnRaw.replace(/:\d+$/, '');
+    const kongBaseUrl = kongUrlRaw.replace(/:\d+$/, '');
+    overrides['SERVICE_FQDN_SUPABASEKONG'] = kongBaseFqdn;
+    overrides['SERVICE_URL_SUPABASEKONG'] = kongBaseUrl;
+    overrides['SERVICE_FQDN_SUPABASEKONG_8000'] = kongFqdnRaw;
+    overrides['SERVICE_URL_SUPABASEKONG_8000'] = kongUrlRaw;
+
     // Track which hub overrides are missing
     const missingHub = [];
     if (!pgHost) missingHub.push('POSTGRES_HOSTNAME');
