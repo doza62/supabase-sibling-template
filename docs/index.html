@@ -484,13 +484,19 @@ button.warn { background: var(--warn); color: var(--bg); }
 const HOSTNAME_KEYS = ['POSTGRES_HOSTNAME', 'MINIO_HOSTNAME', 'ANALYTICS_HOSTNAME'];
 const SMTP_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_ADMIN_EMAIL', 'SMTP_SENDER_NAME'];
 const SHARED_KEYS = [
-  'SERVICE_PASSWORD_POSTGRES', 'SERVICE_PASSWORD_JWT',
-  'SERVICE_SUPABASEANON_KEY', 'SERVICE_SUPABASESERVICE_KEY',
-  'SERVICE_PASSWORD_PGMETACRYPTO',
+  'SERVICE_PASSWORD_POSTGRES',
   'SERVICE_USER_MINIO', 'SERVICE_PASSWORD_MINIO',
+  'OPENAI_API_KEY'
+];
+const COOLIFY_IMPORT_KEYS = [
+  'SERVICE_FQDN_SUPABASEKONG', 'SERVICE_URL_SUPABASEKONG',
+  'SERVICE_FQDN_SUPABASEKONG_8000', 'SERVICE_URL_SUPABASEKONG_8000',
+  'SERVICE_USER_ADMIN', 'SERVICE_PASSWORD_ADMIN',
+  'SERVICE_PASSWORD_JWT', 'SERVICE_PASSWORD_PGMETACRYPTO',
   'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE',
+  'SERVICE_PASSWORD_SUPAVISORSECRET', 'SERVICE_PASSWORD_VAULTENC',
+  'SERVICE_SUPABASEANON_KEY', 'SERVICE_SUPABASESERVICE_KEY',
   'SECRET_PASSWORD_REALTIME',
-  'OPENAI_API_KEY',
   'SERVICE_ROLE_KEY_ASYMMETRIC', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'ANON_KEY_ASYMMETRIC'
 ];
 const SETTINGS_DEFAULTS = {
@@ -532,6 +538,270 @@ const SETTINGS_KEYS = Object.keys(SETTINGS_DEFAULTS);
 const AUTO_KEYS = ['POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STORAGE_TENANT_ID', 'SERVICE_USER_ADMIN', 'KONG_FQDN', 'STUDIO_FQDN'];
 const OVERRIDE_KEYS = ['API_EXTERNAL_URL', 'GOTRUE_SITE_URL', 'SERVICE_PASSWORD_ADMIN', 'ADDITIONAL_REDIRECT_URLS'];
 const AUTOGEN_KEYS = ['SERVICE_PASSWORD_ADMIN', 'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE', 'SECRET_PASSWORD_REALTIME'];
+
+const LEAN_COMPOSE_TEMPLATE = `services:
+  supabase-kong:
+    image: 'kong/kong:3.9.1'
+    entrypoint: /home/kong/kong-entrypoint.sh
+    healthcheck:
+      test: [CMD, kong, health]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      - 'SERVICE_FQDN_SUPABASEKONG_8000=\${KONG_FQDN}'
+      - 'SERVICE_URL_SUPABASEKONG_8000=\${KONG_FQDN}'
+      - 'KONG_PORT_MAPS=443:8000'
+      - 'JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/usr/local/kong/kong.yml
+      - 'KONG_DNS_ORDER=LAST,A,CNAME'
+      - KONG_DNS_NOT_FOUND_TTL=1
+      - 'KONG_PLUGINS=request-transformer,cors,key-auth,acl,basic-auth,request-termination,ip-restriction,post-function'
+      - KONG_NGINX_PROXY_PROXY_BUFFER_SIZE=160k
+      - 'KONG_NGINX_PROXY_PROXY_BUFFERS=64 160k'
+      - 'KONG_PROXY_ACCESS_LOG=/dev/stdout combined'
+      - 'SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SUPABASE_SERVICE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'SUPABASE_PUBLISHABLE_KEY=\${SUPABASE_PUBLISHABLE_KEY:-}'
+      - 'SUPABASE_SECRET_KEY=\${SUPABASE_SECRET_KEY:-}'
+      - 'ANON_KEY_ASYMMETRIC=\${ANON_KEY_ASYMMETRIC:-}'
+      - 'SERVICE_ROLE_KEY_ASYMMETRIC=\${SERVICE_ROLE_KEY_ASYMMETRIC:-}'
+      - 'DASHBOARD_USERNAME=\${SERVICE_USER_ADMIN}'
+      - 'DASHBOARD_PASSWORD=\${SERVICE_PASSWORD_ADMIN}'
+    volumes:
+      - type: bind
+        source: ./volumes/api/kong-entrypoint.sh
+        target: /home/kong/kong-entrypoint.sh
+      - type: bind
+        source: ./volumes/api/kong.yml
+        target: /home/kong/temp.yml
+
+  supabase-studio:
+    image: 'supabase/studio:2026.03.16-sha-5528817'
+    healthcheck:
+      test: [CMD, node, '-e', "fetch('http://127.0.0.1:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - 'SERVICE_FQDN_SUPABASESTUDIO_3000=\${STUDIO_FQDN}'
+      - 'SERVICE_URL_SUPABASESTUDIO_3000=\${STUDIO_FQDN}'
+      - HOSTNAME=0.0.0.0
+      - 'STUDIO_PG_META_URL=http://supabase-meta:8080'
+      - 'POSTGRES_PASSWORD=\${SERVICE_PASSWORD_POSTGRES}'
+      - 'POSTGRES_HOST=\${POSTGRES_HOSTNAME:-supabase-db}'
+      - 'POSTGRES_PORT=\${POSTGRES_PORT:-5432}'
+      - 'POSTGRES_DB=\${POSTGRES_DB:-postgres}'
+      - 'PGRST_DB_SCHEMAS=\${PGRST_DB_SCHEMAS:-public,storage,graphql_public}'
+      - 'PGRST_DB_MAX_ROWS=\${PGRST_DB_MAX_ROWS:-1000}'
+      - 'PGRST_DB_EXTRA_SEARCH_PATH=\${PGRST_DB_EXTRA_SEARCH_PATH:-public}'
+      - 'DEFAULT_ORGANIZATION_NAME=\${STUDIO_DEFAULT_ORGANIZATION:-Default Organization}'
+      - 'DEFAULT_PROJECT_NAME=\${STUDIO_DEFAULT_PROJECT:-Default Project}'
+      - SUPABASE_URL=http://supabase-kong:8000
+      - 'SUPABASE_PUBLIC_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SUPABASE_SERVICE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'AUTH_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'PG_META_CRYPTO_KEY=\${SERVICE_PASSWORD_PGMETACRYPTO}'
+      - 'LOGFLARE_API_KEY=\${SERVICE_PASSWORD_LOGFLARE}'
+      - 'LOGFLARE_PUBLIC_ACCESS_TOKEN=\${SERVICE_PASSWORD_LOGFLARE}'
+      - 'LOGFLARE_PRIVATE_ACCESS_TOKEN=\${SERVICE_PASSWORD_LOGFLAREPRIVATE}'
+      - LOGFLARE_URL=http://\${ANALYTICS_HOSTNAME:-supabase-analytics}:4000
+      - 'NEXT_PUBLIC_SUPABASE_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'NEXT_PUBLIC_SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - NEXT_PUBLIC_ENABLE_LOGS=true
+      - NEXT_ANALYTICS_BACKEND_PROVIDER=postgres
+      - 'OPENAI_API_KEY=\${OPENAI_API_KEY}'
+      - SNIPPETS_MANAGEMENT_FOLDER=/app/snippets
+      - EDGE_FUNCTIONS_MANAGEMENT_FOLDER=/app/edge-functions
+    volumes:
+      - './volumes/snippets:/app/snippets'
+      - './volumes/functions:/app/edge-functions'
+      - './volumes/studio-data:/app/studio-data'
+
+  supabase-rest:
+    image: 'postgrest/postgrest:v14.6'
+    environment:
+      - 'PGRST_DB_URI=postgres://authenticator:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - 'PGRST_DB_SCHEMAS=\${PGRST_DB_SCHEMAS:-public,storage,graphql_public}'
+      - 'PGRST_DB_MAX_ROWS=\${PGRST_DB_MAX_ROWS:-1000}'
+      - 'PGRST_DB_EXTRA_SEARCH_PATH=\${PGRST_DB_EXTRA_SEARCH_PATH:-public}'
+      - PGRST_DB_ANON_ROLE=anon
+      - 'PGRST_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - PGRST_DB_USE_LEGACY_GUCS=false
+      - 'PGRST_APP_SETTINGS_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'PGRST_APP_SETTINGS_JWT_EXP=\${JWT_EXPIRY:-3600}'
+    command: postgrest
+    exclude_from_hc: true
+
+  supabase-auth:
+    image: 'supabase/gotrue:v2.186.0'
+    healthcheck:
+      test: [CMD, wget, '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:9999/health']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - GOTRUE_API_HOST=0.0.0.0
+      - GOTRUE_API_PORT=9999
+      - 'API_EXTERNAL_URL=\${API_EXTERNAL_URL:-http://supabase-kong:8000}'
+      - GOTRUE_DB_DRIVER=postgres
+      - 'GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - 'GOTRUE_SITE_URL=\${GOTRUE_SITE_URL:-\${SERVICE_URL_SUPABASEKONG}}'
+      - 'GOTRUE_URI_ALLOW_LIST=\${ADDITIONAL_REDIRECT_URLS}'
+      - 'GOTRUE_DISABLE_SIGNUP=\${DISABLE_SIGNUP:-false}'
+      - GOTRUE_JWT_ADMIN_ROLES=service_role
+      - GOTRUE_JWT_AUD=authenticated
+      - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
+      - 'GOTRUE_JWT_EXP=\${JWT_EXPIRY:-3600}'
+      - 'GOTRUE_JWT_SECRET=\sign\${SERVICE_PASSWORD_JWT}'
+      - 'GOTRUE_EXTERNAL_EMAIL_ENABLED=\${ENABLE_EMAIL_SIGNUP:-true}'
+      - 'GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED=\${ENABLE_ANONYMOUS_USERS:-false}'
+      - 'GOTRUE_MAILER_AUTOCONFIRM=\${ENABLE_EMAIL_AUTOCONFIRM:-false}'
+      - 'GOTRUE_SMTP_ADMIN_EMAIL=\${SMTP_ADMIN_EMAIL}'
+      - 'GOTRUE_SMTP_HOST=\${SMTP_HOST}'
+      - 'GOTRUE_SMTP_PORT=\${SMTP_PORT:-587}'
+      - 'GOTRUE_SMTP_USER=\${SMTP_USER}'
+      - 'GOTRUE_SMTP_PASS=\${SMTP_PASS}'
+      - 'GOTRUE_SMTP_SENDER_NAME=\${SMTP_SENDER_NAME}'
+      - 'GOTRUE_MAILER_URLPATHS_INVITE=\${MAILER_URLPATHS_INVITE:-/auth/v1/verify}'
+      - 'GOTRUE_MAILER_URLPATHS_CONFIRMATION=\${MAILER_URLPATHS_CONFIRMATION:-/auth/v1/verify}'
+      - 'GOTRUE_MAILER_URLPATHS_RECOVERY=\${MAILER_URLPATHS_RECOVERY:-/auth/v1/verify}'
+      - 'GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE=\${MAILER_URLPATHS_EMAIL_CHANGE:-/auth/v1/verify}'
+      - 'GOTRUE_EXTERNAL_PHONE_ENABLED=\${ENABLE_PHONE_SIGNUP:-true}'
+      - 'GOTRUE_SMS_AUTOCONFIRM=\${ENABLE_PHONE_AUTOCONFIRM:-true}'
+
+  realtime-dev:
+    image: 'supabase/realtime:v2.76.5'
+    healthcheck:
+      test: [CMD, curl, '-sSfL', '--head', '-o', /dev/null, '-H', 'Authorization: Bearer \${SERVICE_SUPABASEANON_KEY}', 'http://127.0.0.1:4000/api/tenants/realtime-dev/health']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+      start_period: 10s
+    environment:
+      - PORT=4000
+      - 'DB_HOST=\${POSTGRES_HOSTNAME:-supabase-db}'
+      - 'DB_PORT=\${POSTGRES_PORT:-5432}'
+      - DB_USER=supabase_admin
+      - 'DB_PASSWORD=\${SERVICE_PASSWORD_POSTGRES}'
+      - 'DB_NAME=\${POSTGRES_DB:-postgres}'
+      - 'DB_AFTER_CONNECT_QUERY=SET search_path TO _realtime'
+      - DB_ENC_KEY=supabaserealtime
+      - 'API_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'SECRET_KEY_BASE=\${SECRET_PASSWORD_REALTIME}'
+      - 'METRICS_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'ERL_AFLAGS=-proto_dist inet_tcp'
+      - "DNS_NODES=''"
+      - RLIMIT_NOFILE=10000
+      - APP_NAME=realtime
+      - SEED_SELF_HOST=true
+      - LOG_LEVEL=error
+      - RUN_JANITOR=true
+      - JANITOR_INTERVAL=60000
+      - DISABLE_HEALTHCHECK_LOGGING=true
+    command: "sh -c \"/app/bin/migrate && /app/bin/realtime eval 'Realtime.Release.seeds(Realtime.Repo)' && /app/bin/server\"\\n"
+
+  supabase-storage:
+    image: 'supabase/storage-api:v1.44.2'
+    depends_on:
+      supabase-rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+    healthcheck:
+      test: [CMD, wget, '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:5000/status']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - SERVER_PORT=5000
+      - SERVER_REGION=local
+      - MULTI_TENANT=false
+      - 'AUTH_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'DATABASE_URL=postgres://supabase_storage_admin:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - DB_INSTALL_ROLES=false
+      - STORAGE_BACKEND=s3
+      - STORAGE_S3_BUCKET=stub
+      - STORAGE_S3_ENDPOINT=http://\${MINIO_HOSTNAME:-supabase-minio}:9000
+      - STORAGE_S3_FORCE_PATH_STYLE=true
+      - STORAGE_S3_REGION=us-east-1
+      - 'AWS_ACCESS_KEY_ID=\${SERVICE_USER_MINIO}'
+      - 'AWS_SECRET_ACCESS_KEY=\${SERVICE_PASSWORD_MINIO}'
+      - UPLOAD_FILE_SIZE_LIMIT=524288000
+      - UPLOAD_FILE_SIZE_LIMIT_STANDARD=524288000
+      - UPLOAD_SIGNED_URL_EXPIRATION_TIME=120
+      - TUS_URL_PATH=/upload/resumable
+      - TUS_MAX_SIZE=3600000
+      - ENABLE_IMAGE_TRANSFORMATION=true
+      - IMGPROXY_URL=http://imgproxy:8080
+      - IMGPROXY_REQUEST_TIMEOUT=15
+      - DATABASE_SEARCH_PATH=storage
+      - NODE_ENV=production
+      - REQUEST_ALLOW_X_FORWARDED_PATH=true
+      - 'ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SERVICE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - POSTGREST_URL=http://supabase-rest:3000
+      - 'PGRST_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'STORAGE_PUBLIC_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'TENANT_ID=\${STORAGE_TENANT_ID:-storage-single-tenant}'
+    volumes:
+      - './volumes/storage:/var/lib/storage'
+
+  imgproxy:
+    image: 'darthsim/imgproxy:v3.30.1'
+    healthcheck:
+      test: [CMD, imgproxy, health]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - 'IMGPROXY_BIND=:8080'
+      - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
+      - IMGPROXY_USE_ETAG=true
+      - 'IMGPROXY_AUTO_WEBP=\${IMGPROXY_AUTO_WEBP:-true}'
+      - IMGPROXY_MAX_SRC_RESOLUTION=16.8
+    volumes:
+      - './volumes/storage:/var/lib/storage'
+
+  supabase-meta:
+    image: 'supabase/postgres-meta:v0.95.2'
+    environment:
+      - PG_META_PORT=8080
+      - 'PG_META_DB_HOST=\${POSTGRES_HOSTNAME:-supabase-db}'
+      - 'PG_META_DB_PORT=\${POSTGRES_PORT:-5432}'
+      - 'PG_META_DB_NAME=\${POSTGRES_DB:-postgres}'
+      - PG_META_DB_USER=supabase_admin
+      - 'PG_META_DB_PASSWORD=\${SERVICE_PASSWORD_POSTGRES}'
+      - 'CRYPTO_KEY=\${SERVICE_PASSWORD_PGMETACRYPTO}'
+
+  supabase-edge-functions:
+    image: 'supabase/edge-runtime:v1.71.2'
+    healthcheck:
+      test: [CMD, echo, 'Edge Functions is healthy']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - 'JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - SUPABASE_URL=http://supabase-kong:8000
+      - 'SUPABASE_PUBLIC_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SUPABASE_SERVICE_ROLE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'SUPABASE_DB_URL=postgresql://postgres:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - 'VERIFY_JWT=\${FUNCTIONS_VERIFY_JWT:-false}'
+    volumes:
+      - './volumes/functions:/home/deno/functions'
+      - 'deno-cache:/root/.cache/deno'
+      - type: bind
+        source: ./volumes/functions/main/index.ts
+        target: /home/deno/functions/main/index.ts
+      - type: bind
+        source: ./volumes/functions/hello/index.ts
+        target: /home/deno/functions/hello/index.ts
+    command: [start, '--main-service', /home/deno/functions/main]
+`;
 
 const HOSTNAME_DEFAULTS = {
   POSTGRES_HOSTNAME: 'supabase-db',
@@ -691,6 +961,7 @@ function newProject() {
     name: cleanName,
     slug: slugify(cleanName),
     overrides: {},
+    coolifyEnv: {},
     publicUrls: { kong: '', studio: '' },
     health: { kong: 'unknown', studio: 'unknown' },
     healthAt: null,
@@ -752,66 +1023,68 @@ async function checkHealth(url) {
     return 'live';
   } catch (e) { return 'dead'; }
 }
-async function checkProjectHealth(proj) {
-  if (!proj.publicUrls.kong && !proj.publicUrls.studio) return;
-  const statusEl = document.getElementById('healthStatus');
-  if (statusEl) statusEl.innerHTML = '<span class="health-pill checking">⟳ Checking...</span>';
-  const [k, s] = await Promise.all([checkHealth(proj.publicUrls.kong), checkHealth(proj.publicUrls.studio)]);
-  proj.health = { kong: k, studio: s };
-  proj.healthAt = new Date().toISOString();
-  save();
-  renderSidebar();
-  renderMain();
-}
-
-// ─── Output Generation ─────────────────────────────────────
 function generateOutput(proj) {
   const lines = [];
-  lines.push('# ── 🔵 Hostnames (from Reusables) ────────────────────────');
-  HOSTNAME_KEYS.forEach(k => {
-    const v = state.reusables.hostnames[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── 🟢 Shared Secrets (from Reusables) ──────────────────');
+  
+  // Hub-shared (from reusables)
+  lines.push('# ── 🔵 Hub Shared (PG + MinIO) ────────────────────────────');
+  lines.push(`POSTGRES_HOSTNAME=${state.reusables.hostnames.POSTGRES_HOSTNAME || ''}`);
+  lines.push(`MINIO_HOSTNAME=${state.reusables.hostnames.MINIO_HOSTNAME || ''}`);
+  lines.push(`ANALYTICS_HOSTNAME=${state.reusables.hostnames.ANALYTICS_HOSTNAME || ''}`);
   SHARED_KEYS.forEach(k => {
-    const v = state.reusables.shared[k];
-    lines.push(`${k}=${v || ''}`);
+    lines.push(`${k}=${state.reusables.shared[k] || ''}`);
   });
+  
+  // Per-project tokens (from Coolify import)
   lines.push('');
-  lines.push('# ── ⚙️ Settings (from Reusables) ─────────────────────────');
-  SETTINGS_KEYS.forEach(k => {
-    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
-    lines.push(`${k}=${v || ''}`);
+  lines.push('# ── 🟣 Per-Project Tokens (from Coolify import) ──────────');
+  const hasCoolify = proj.coolifyEnv && Object.keys(proj.coolifyEnv).length;
+  COOLIFY_IMPORT_KEYS.forEach(k => {
+    if (hasCoolify && proj.coolifyEnv[k] !== undefined) {
+      lines.push(`${k}=${proj.coolifyEnv[k]}`);
+    } else {
+      // Backward compatibility: fallback to state.reusables.shared[k]
+      const fallbackVal = state.reusables.shared[k] || '';
+      lines.push(`${k}=${fallbackVal}`);
+    }
   });
+  if (!hasCoolify) {
+    lines.push('# (Note: Paste from Coolify Environment tab to import per-project tokens)');
+  }
+  
+  // Sibling-specific
   lines.push('');
-  lines.push('# ── 📧 SMTP (from Reusables) ────────────────────────────');
-  SMTP_KEYS.forEach(k => {
-    const v = state.reusables.smtp[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── 🟡 Per-Sibling Config ────────────────────────────────');
+  lines.push('# ── 🟡 Sibling-Specific ────────────────────────────────────');
   [...AUTO_KEYS, ...OVERRIDE_KEYS].forEach(k => {
     const v = getFinalValue(k, proj);
     lines.push(`${k}=${v || ''}`);
   });
+  
+  // Settings
   lines.push('');
-  lines.push('# ── 🌐 Service URLs (from FQDNs, Coolify format with port) ──');
-  const kongFqdnRaw = getFinalValue('KONG_FQDN', proj);
-  const studioFqdnRaw = getFinalValue('STUDIO_FQDN', proj);
-  // Strip protocol for FQDN-only vars
-  const kongFqdn = kongFqdnRaw.replace(/^https?:\/\//, '');
-  const studioFqdn = studioFqdnRaw.replace(/^https?:\/\//, '');
-  // Single var per service, FQDN includes port per Coolify format
-  lines.push(`SERVICE_FQDN_SUPABASEKONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASEKONG=${kongFqdnRaw}`);
-  lines.push(`SERVICE_FQDN_SUPABASE_KONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_KONG=${kongFqdnRaw}`);
-  lines.push(`SERVICE_FQDN_SUPABASESTUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASESTUDIO=${studioFqdnRaw}`);
-  lines.push(`SERVICE_FQDN_SUPABASE_STUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_STUDIO=${studioFqdnRaw}`);
+  lines.push('# ── ⚙️ Settings ────────────────────────────────────────────');
+  SETTINGS_KEYS.forEach(k => {
+    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
+    lines.push(`${k}=${v || ''}`);
+  });
+  
+  // SMTP
+  lines.push('');
+  lines.push('# ── 📧 SMTP ────────────────────────────────────────────────');
+  SMTP_KEYS.forEach(k => {
+    lines.push(`${k}=${state.reusables.smtp[k] || ''}`);
+  });
+  
+  // Service URLs from Coolify import (if available)
+  if (proj.coolifyEnv && proj.coolifyEnv.SERVICE_FQDN_SUPABASEKONG) {
+    lines.push('');
+    lines.push('# ── 🌐 Service URLs (from Coolify import) ─────────────────');
+    lines.push(`SERVICE_FQDN_SUPABASEKONG=${proj.coolifyEnv.SERVICE_FQDN_SUPABASEKONG || ''}`);
+    lines.push(`SERVICE_URL_SUPABASEKONG=${proj.coolifyEnv.SERVICE_URL_SUPABASEKONG || ''}`);
+    lines.push(`SERVICE_FQDN_SUPABASEKONG_8000=${proj.coolifyEnv.SERVICE_FQDN_SUPABASEKONG_8000 || ''}`);
+    lines.push(`SERVICE_URL_SUPABASEKONG_8000=${proj.coolifyEnv.SERVICE_URL_SUPABASEKONG_8000 || ''}`);
+  }
+  
   return lines.join('\n');
 }
 
@@ -955,6 +1228,25 @@ function renderMain() {
       </div>
     </div>
 
+    <div class="section" style="border-left: 3px solid var(--blue);">
+      <h3>📥 Import from Coolify <span class="badge ${Object.keys(proj.coolifyEnv||{}).length ? 'ok' : 'info'}">${Object.keys(proj.coolifyEnv||{}).length} vars</span></h3>
+      <div class="hint" style="margin-bottom:10px;">
+        Paste env vars from <strong>Coolify → this sibling service → Environment tab</strong>.
+        Extracts per-project tokens (JWT, anon key, service key, admin creds, FQDNs).
+        Each sibling gets its OWN tokens — don't share hub's.
+      </div>
+      <textarea id="coolifyPaste" class="output" style="min-height:150px;" placeholder="SERVICE_FQDN_SUPABASEKONG=...&#10;SERVICE_PASSWORD_JWT=...&#10;SERVICE_SUPABASEANON_KEY=...&#10;..."></textarea>
+      <div class="btn-row">
+        <button onclick="importCoolifyEnv()">Parse & Import</button>
+        <button class="secondary" onclick="clearCoolifyEnv()">Clear Import</button>
+      </div>
+      ${proj.coolifyEnv && Object.keys(proj.coolifyEnv).length ? `
+        <div style="margin-top:10px;font-size:0.8rem;color:var(--muted);">
+          <strong>Imported:</strong> ${Object.keys(proj.coolifyEnv).map(k => `<code style="color:var(--accent);">${k}</code>`).join(', ')}
+        </div>
+      ` : ''}
+    </div>
+
     <div class="section sibling">
       <h3>🟡 Per-Sibling Config <span class="badge info">Auto from name</span></h3>
       <div class="hint" style="margin-bottom:10px;">Yellow fields auto-generate from project name. Edit to override (turns green). ∅ = Coolify auto-generates random.</div>
@@ -1008,6 +1300,13 @@ function renderMain() {
       <div class="btn-row">
         <button onclick="copyOutput()">Copy to Clipboard</button>
         <button class="secondary" onclick="downloadOutput()">Download .env</button>
+        <button class="secondary" onclick="downloadLeanCompose()">Download Lean Compose</button>
+        <button class="secondary" onclick="copySqlCommand()">Copy SQL Command</button>
+      </div>
+      <div style="margin-top:12px;">
+        <h3 style="margin-bottom:6px;">📋 SQL: Create Sibling Database</h3>
+        <div class="hint" style="margin-bottom:6px;">Run in HUB's Studio SQL Editor before deploying:</div>
+        <pre style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:'SF Mono',Menlo,monospace;font-size:0.82rem;color:var(--accent);">CREATE DATABASE ${escHtml(proj.slug)} TEMPLATE sibling_template;</pre>
       </div>
     </div>
   `;
@@ -1064,6 +1363,29 @@ function markDeployed() {
   toast('Marked as deployed');
 }
 
+function importCoolifyEnv() {
+  const ta = document.getElementById('coolifyPaste');
+  if (!ta) return;
+  const parsed = parseEnv(ta.value);
+  const proj = getCurrentProj();
+  if (!proj) return;
+  if (!proj.coolifyEnv) proj.coolifyEnv = {};
+  let count = 0;
+  COOLIFY_IMPORT_KEYS.forEach(k => {
+    if (parsed[k]) { proj.coolifyEnv[k] = parsed[k]; count++; }
+  });
+  save();
+  render();
+  toast(count > 0 ? `Imported ${count} per-project tokens` : 'No matching keys found');
+}
+function clearCoolifyEnv() {
+  const proj = getCurrentProj();
+  if (!proj) return;
+  proj.coolifyEnv = {};
+  save();
+  render();
+}
+
 // ─── Output Actions ────────────────────────────────────────
 function copyOutput() {
   const out = document.getElementById('outputText');
@@ -1080,6 +1402,23 @@ function downloadOutput() {
   a.download = `${p.slug}.env`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+function downloadLeanCompose() {
+  const compose = LEAN_COMPOSE_TEMPLATE;
+  const blob = new Blob([compose], {type: 'text/yaml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'docker-compose.yml';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Lean compose downloaded');
+}
+function copySqlCommand() {
+  const proj = getCurrentProj();
+  if (!proj) return;
+  const sql = `CREATE DATABASE ${proj.slug} TEMPLATE sibling_template;`;
+  navigator.clipboard.writeText(sql).then(() => toast('SQL copied'));
 }
 
 // ─── Helpers ───────────────────────────────────────────────
