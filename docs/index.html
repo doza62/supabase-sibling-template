@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Supabase Sibling Manager</title>
+<title>Supabase Sibling Environment Generator</title>
 <style>
 :root {
   --bg: #0f1117;
@@ -17,1112 +17,1311 @@
   --warn: #fbbf24;
   --blue: #60a5fa;
   --purple: #a78bfa;
-  --sidebar-w: 280px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
-  display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  line-height: 1.5;
+  padding: 40px 20px;
 }
-
-/* ─── Sidebar ─────────────────────────────────────────────── */
-.sidebar {
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+.container {
+  max-width: 900px;
+  margin: 0 auto;
 }
-.sidebar-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.sidebar-header h1 { font-size: 1rem; font-weight: 600; }
-.sidebar-header .logo {
-  width: 24px; height: 24px;
-  background: var(--accent);
-  border-radius: 6px;
-  display: grid; place-items: center;
-  color: var(--bg);
-  font-weight: 700;
-}
-.new-btn {
-  background: var(--accent);
-  color: var(--bg);
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-weight: 600;
-  cursor: pointer;
-  margin: 12px 16px;
-  font-size: 0.85rem;
-}
-.new-btn:hover { filter: brightness(1.1); }
-.project-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 8px;
-}
-.project-item {
-  padding: 10px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-  border: 1px solid transparent;
-}
-.project-item:hover { background: var(--panel-hi); }
-.project-item.active {
-  background: var(--panel-hi);
-  border-color: var(--accent);
-}
-.project-item .status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.project-item .name {
-  flex: 1;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.project-item .meta {
-  font-size: 0.7rem;
-  color: var(--muted);
-}
-.sidebar-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-}
-.sidebar-footer button {
-  flex: 1;
-  background: var(--panel-hi);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-.sidebar-footer button:hover { background: var(--border); }
-.sidebar-footer button.warn { color: var(--warn); }
-
-/* ─── Main ────────────────────────────────────────────────── */
-.main {
-  height: 100vh;
-  overflow-y: auto;
-  padding: 24px 32px;
-}
-.main-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  gap: 16px;
-}
-.main-header h2 { font-size: 1.4rem; }
-.main-header .actions { display: flex; gap: 8px; }
-
-/* ─── Sections ────────────────────────────────────────────── */
-.section {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-.section.hostnames { border-left: 3px solid var(--blue); }
-.section.smtp { border-left: 3px solid var(--purple); }
-.section.shared { border-left: 3px solid var(--accent); }
-.section.sibling { border-left: 3px solid var(--warn); }
-.section.urls { border-left: 3px solid var(--purple); }
-.section.output { border-left: 3px solid var(--purple); }
-.section h3 {
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.section h3 .badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-}
-.badge.ok { background: rgba(62, 207, 142, 0.2); color: var(--accent); }
-.badge.warn { background: rgba(251, 191, 36, 0.2); color: var(--warn); }
-.badge.bad { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
-.badge.info { background: rgba(96, 165, 250, 0.2); color: var(--blue); }
-
-/* ─── Form ────────────────────────────────────────────────── */
-.field {
-  display: grid;
-  grid-template-columns: 220px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.field label {
-  font-family: 'SF Mono', Menlo, monospace;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.field input {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-family: 'SF Mono', Menlo, monospace;
-  font-size: 0.85rem;
-  width: 100%;
-}
-.field input:focus { outline: 1px solid var(--accent); }
-.field input.auto {
-  background: rgba(251, 191, 36, 0.05);
-  border-color: rgba(251, 191, 36, 0.3);
-}
-.field input.overridden {
-  background: rgba(62, 207, 142, 0.05);
-  border-color: rgba(62, 207, 142, 0.3);
-}
-.field input.empty-warn {
-  border-color: rgba(255, 107, 107, 0.4);
-}
-.field .hint-icon {
-  font-size: 0.85rem;
-  color: var(--muted);
-  width: 20px;
+header {
+  margin-bottom: 30px;
   text-align: center;
 }
-.field .hint-icon.warn { color: var(--warn); }
-.field .hint-icon.ok { color: var(--accent); }
-.field .hint-icon.danger { color: var(--danger); }
-
-/* ─── Live Preview ────────────────────────────────────────── */
-.preview {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px;
-  margin-top: 10px;
-  font-family: 'SF Mono', Menlo, monospace;
-  font-size: 0.82rem;
-}
-.preview .line {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  padding: 3px 0;
-  border-bottom: 1px dashed var(--border);
-}
-.preview .line:last-child { border-bottom: none; }
-.preview .key { color: var(--blue); }
-.preview .val { color: var(--text); word-break: break-all; }
-.preview .val.empty { color: var(--danger); font-style: italic; }
-.preview .val.auto { color: var(--warn); }
-.preview .val.override { color: var(--accent); }
-.preview .val.autogen { color: var(--muted); font-style: italic; }
-
-/* ─── Output ──────────────────────────────────────────────── */
-textarea.output {
-  width: 100%;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px;
-  font-family: 'SF Mono', Menlo, monospace;
-  font-size: 0.82rem;
-  min-height: 280px;
-  resize: vertical;
-}
-
-/* ─── Buttons ─────────────────────────────────────────────── */
-button {
-  background: var(--accent);
-  color: var(--bg);
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
+h1 {
+  font-size: 1.8rem;
   font-weight: 600;
-  cursor: pointer;
-  font-size: 0.85rem;
+  margin-bottom: 8px;
 }
-button:hover { filter: brightness(1.1); }
-button.secondary { background: var(--panel-hi); color: var(--text); border: 1px solid var(--border); }
-button.danger { background: var(--danger); }
-button.warn { background: var(--warn); color: var(--bg); }
-.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-
-/* ─── Modal ───────────────────────────────────────────────── */
-.modal-bg {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: none;
+p.subtitle {
+  color: var(--muted);
+}
+.wizard-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  position: relative;
+  padding: 0 10px;
+}
+.wizard-progress::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: var(--border);
+  z-index: 1;
+}
+.progress-bar-fill {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  height: 2px;
+  background: var(--accent);
+  z-index: 1;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+.progress-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  font-weight: 600;
+  color: var(--muted);
+  transition: all 0.3s ease;
 }
-.modal-bg.show { display: flex; }
-.modal {
+.progress-step.active .step-dot {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--panel-hi);
+}
+.progress-step.completed .step-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+.step-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.progress-step.active .step-label {
+  color: var(--text);
+}
+.progress-step.completed .step-label {
+  color: var(--accent);
+}
+.card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 24px;
-  width: 90%;
-  max-width: 720px;
-  max-height: 90vh;
-  overflow-y: auto;
+  margin-bottom: 24px;
 }
-.modal h2 { margin-bottom: 8px; }
-.modal .modal-tabs {
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 8px;
   display: flex;
-  gap: 4px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 8px;
 }
-.modal .modal-tab {
-  padding: 8px 14px;
-  cursor: pointer;
-  border-radius: 6px 6px 0 0;
-  font-size: 0.85rem;
+.card-subtitle {
   color: var(--muted);
-  border: none;
-  background: transparent;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
 }
-.modal .modal-tab.active {
-  color: var(--accent);
-  border-bottom: 2px solid var(--accent);
-}
-.modal .modal-tab:hover { color: var(--text); }
-.modal .modal-pane { display: none; }
-.modal .modal-pane.active { display: block; }
-.modal textarea.bulk {
-  width: 100%;
-  min-height: 200px;
-  background: var(--bg);
+.badge {
+  background: var(--panel-hi);
+  border: 1px solid var(--border);
   color: var(--text);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.badge.accent {
+  background: rgba(62, 207, 142, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.badge.danger {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.badge.warn {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group:last-child {
+  margin-bottom: 0;
+}
+label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.help-text {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+textarea, input[type="text"], input[type="password"] {
+  width: 100%;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 10px;
-  font-family: 'SF Mono', Menlo, monospace;
-  font-size: 0.82rem;
-  resize: vertical;
+  color: var(--text);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
 }
-
-/* ─── Health Pill ─────────────────────────────────────────── */
-.health-pill {
+textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
+  border-color: var(--accent);
+}
+textarea.monospace {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85rem;
+}
+.btn {
+  background: var(--panel-hi);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  gap: 6px;
 }
-.health-pill.live { background: rgba(62, 207, 142, 0.2); color: var(--accent); }
-.health-pill.dead { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
-.health-pill.unknown { background: rgba(139, 143, 155, 0.2); color: var(--muted); }
-.health-pill.checking { background: rgba(251, 191, 36, 0.2); color: var(--warn); }
-
-/* ─── Empty State ─────────────────────────────────────────── */
-.empty-state {
-  text-align: center;
-  padding: 64px 32px;
-  color: var(--muted);
+.btn:hover {
+  background: var(--border);
 }
-.empty-state h2 { color: var(--text); margin-bottom: 8px; }
-.empty-state p { margin-bottom: 20px; }
-
-/* ─── Toast ───────────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
+.btn.primary {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--bg);
-  padding: 10px 16px;
+}
+.btn.primary:hover {
+  opacity: 0.9;
+}
+.btn.danger {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn.danger:hover {
+  background: var(--danger);
+  color: var(--bg);
+}
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px 0;
+  user-select: none;
+}
+.collapsible-header::after {
+  content: '▼';
+  font-size: 0.8rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.collapsible-header.closed::after {
+  transform: rotate(-90deg);
+}
+.collapsible-content {
+  margin-top: 15px;
+}
+.collapsible-content.hidden {
+  display: none;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 15px;
+}
+@media (min-width: 768px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.summary-col {
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
+  padding: 12px;
+}
+.summary-col-title {
   font-weight: 600;
   font-size: 0.85rem;
-  z-index: 200;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-}
-.toast.show { opacity: 1; }
-
-/* ─── Misc ────────────────────────────────────────────────── */
-.hint { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
-.field-row {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
 }
-.field-row label {
-  font-family: 'SF Mono', Menlo, monospace;
-  font-size: 0.82rem;
-  color: var(--muted);
+.summary-list {
+  list-style: none;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
 }
-.field-row input {
+.summary-list li {
+  padding: 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.read-only-derived {
   background: var(--bg);
-  color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-family: 'SF Mono', Menlo, monospace;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.85rem;
-  width: 100%;
+  margin-top: 15px;
 }
-.field-row input:focus { outline: 1px solid var(--accent); }
-.field-row input.unset { border-color: rgba(255, 107, 107, 0.3); background: rgba(255,107,107,0.05); }
-
-@media (max-width: 800px) {
-  body { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
+.read-only-derived div {
+  margin-bottom: 4px;
+}
+.read-only-derived div:last-child {
+  margin-bottom: 0;
+}
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  gap: 4px;
+}
+.tab {
+  padding: 10px 16px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--muted);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.tab:hover {
+  color: var(--text);
+  background: var(--panel-hi);
+}
+.tab.active {
+  color: var(--accent);
+  background: var(--bg);
+  border-color: var(--border);
+  border-bottom: 1px solid var(--bg);
+  margin-bottom: -1px;
+}
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+.output-pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  overflow: auto;
+  max-height: 500px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  white-space: pre;
+  color: var(--text);
+}
+.callout {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid var(--warn);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.callout-title {
+  font-weight: 600;
+  color: var(--warn);
+  margin-bottom: 4px;
+}
+.callout-body {
+  font-size: 0.9rem;
+}
+.reset-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 </style>
 </head>
 <body>
 
-<aside class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo">S</div>
-    <h1>Sibling Manager</h1>
+<div class="container">
+  <header>
+    <h1>Supabase Sibling Stack Generator</h1>
+    <p class="subtitle">Generate lean environment variables and configuration for deploying Supabase Sibling Services on Coolify</p>
+  </header>
+
+  <div class="wizard-progress">
+    <div class="progress-bar-fill" id="progressBarFill"></div>
+    <div class="progress-step active" id="pStep1">
+      <div class="step-dot">1</div>
+      <div class="step-label">Coolify Env</div>
+    </div>
+    <div class="progress-step" id="pStep2">
+      <div class="step-dot">2</div>
+      <div class="step-label">Hub Shared</div>
+    </div>
+    <div class="progress-step" id="pStep3">
+      <div class="step-dot">3</div>
+      <div class="step-label">Sibling Config</div>
+    </div>
+    <div class="progress-step" id="pStep4">
+      <div class="step-dot">4</div>
+      <div class="step-label">Outputs</div>
+    </div>
   </div>
-  <button class="new-btn" onclick="newProject()">+ New Project</button>
-  <div class="project-list" id="projectList"></div>
-  <div class="sidebar-footer">
-    <button onclick="openReusablesModal()">Reusables</button>
-    <button class="warn" onclick="resetAll()">Reset</button>
-  </div>
-</aside>
 
-<main class="main" id="main"></main>
-
-<div class="modal-bg" id="reusablesModal">
-  <div class="modal">
-    <h2>Reusables Setup</h2>
-    <p class="hint" style="margin-bottom:12px;">Configure once. Applied to all projects. Bulk paste from Coolify, or edit individual fields below.</p>
-
-    <div class="modal-tabs">
-      <button class="modal-tab active" onclick="switchTab('bulk')">Bulk Paste</button>
-      <button class="modal-tab" onclick="switchTab('hostnames')">🔵 Hostnames</button>
-      <button class="modal-tab" onclick="switchTab('smtp')">📧 SMTP</button>
-      <button class="modal-tab" onclick="switchTab('shared')">🟢 Shared Secrets</button>
-      <button class="modal-tab" onclick="switchTab('settings')">⚙️ Settings</button>
+  <div class="card" id="step1Card">
+    <div class="card-title">
+      Step 1: Paste Coolify Environment
+      <span class="badge" id="envBadge">0 variables detected</span>
+    </div>
+    <div class="card-subtitle">Paste the environment variables template copy-pasted from Coolify's service configuration.</div>
+    <div class="form-group">
+      <textarea id="coolifyEnvInput" class="monospace" style="min-height: 300px;" placeholder="Paste everything from Coolify → your service → Environment tab"></textarea>
     </div>
 
-    <div class="modal-pane active" id="pane-bulk">
-      <p class="hint" style="margin-bottom:8px;">Paste all env vars from Coolify (any deployed sibling or hub). Helper will categorize automatically.</p>
-      <textarea class="bulk" id="bulkInput" placeholder="SERVICE_PASSWORD_POSTGRES=...&#10;POSTGRES_HOSTNAME=...&#10;SMTP_HOST=...&#10;..."></textarea>
-      <div class="btn-row">
-        <button onclick="parseBulk()">Parse &amp; Distribute</button>
-        <button class="secondary" onclick="closeReusablesModal()">Cancel</button>
+    <div class="collapsible-header closed" id="summaryHeader" style="display: none;">
+      <span>Parsed Variables Categorization</span>
+    </div>
+    <div class="collapsible-content hidden" id="summaryContent">
+      <div class="summary-grid">
+        <div class="summary-col">
+          <div class="summary-col-title">
+            <span>Per-Project Tokens</span>
+            <span class="badge accent" id="tokenCount">0</span>
+          </div>
+          <ul class="summary-list" id="tokenList"></ul>
+        </div>
+        <div class="summary-col">
+          <div class="summary-col-title">
+            <span>Overridden Hub Vars</span>
+            <span class="badge warn" id="overrideCount">0</span>
+          </div>
+          <ul class="summary-list" id="overrideList"></ul>
+        </div>
+        <div class="summary-col">
+          <div class="summary-col-title">
+            <span>Missing / Incomplete</span>
+            <span class="badge danger" id="missingCount">0</span>
+          </div>
+          <ul class="summary-list" id="missingList"></ul>
+        </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal-pane" id="pane-hostnames">
-      <h3 style="margin-bottom:10px;">🔵 Hub Hostnames</h3>
-      <div class="hint" style="margin-bottom:10px;">Container names of hub services. Find via: <code>docker ps --format '{{ '{{.Names}}' }}' | grep mobile-apps</code></div>
-      <div id="hostnameFields"></div>
+  <div class="card" id="step2Card">
+    <div class="collapsible-header" id="hubHeader">
+      <div class="card-title" style="margin-bottom: 0;">Step 2: Hub Configuration</div>
+    </div>
+    <div class="collapsible-content" id="hubContent">
+      <div class="card-subtitle">Specify settings of the shared hub stack. Saved locally in your browser.</div>
+      <div class="form-group">
+        <label for="hubUuid">Hub Service UUID</label>
+        <input type="text" id="hubUuid" placeholder="e.g. etbtwewgm8wg4v8zhlkfzjx9">
+        <div class="help-text">Found in Coolify service URL or dashboard</div>
+      </div>
+      <div class="form-group">
+        <label for="hubPgPass">Hub Postgres Password</label>
+        <input type="password" id="hubPgPass" placeholder="Enter hub postgres password">
+        <div class="help-text">Copy SERVICE_PASSWORD_POSTGRES from hub's Environment tab</div>
+      </div>
+      <div class="form-group">
+        <label for="hubMinioUser">Hub MinIO User</label>
+        <input type="text" id="hubMinioUser" placeholder="Enter hub MinIO username">
+        <div class="help-text">Copy SERVICE_USER_MINIO from hub</div>
+      </div>
+      <div class="form-group">
+        <label for="hubMinioPass">Hub MinIO Password</label>
+        <input type="password" id="hubMinioPass" placeholder="Enter hub MinIO password">
+        <div class="help-text">Copy SERVICE_PASSWORD_MINIO from hub</div>
+      </div>
+
+      <div class="read-only-derived">
+        <div><strong>POSTGRES_HOSTNAME</strong> = <span id="derivedPgHost">supabase-db-etbtwewgm8wg4v8zhlkfzjx9</span></div>
+        <div><strong>STORAGE_S3_ENDPOINT</strong> = <span id="derivedS3Endpoint">http://supabase-minio-etbtwewgm8wg4v8zhlkfzjx9:9000</span></div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn primary" id="saveHubBtn">Save to browser</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="step3Card">
+    <div class="card-title">Step 3: Sibling Configuration</div>
+    <div class="card-subtitle">Set project-specific details for this sibling stack database and display.</div>
+    <div class="form-group">
+      <label for="siblingDbName">Sibling Database Name</label>
+      <input type="text" id="siblingDbName" placeholder="e.g. aida, onepm, experiment-test">
+      <div class="help-text">Used for POSTGRES_DB, STORAGE_TENANT_ID, and SQL commands. Avoid special characters except hyphens/underscores.</div>
+    </div>
+    <div class="form-group">
+      <label for="siblingDisplayName">Sibling Display Name</label>
+      <input type="text" id="siblingDisplayName" placeholder="e.g. Aida">
+      <div class="help-text">Used as the default project name inside Studio (STUDIO_DEFAULT_PROJECT).</div>
+    </div>
+    <div class="form-group">
+      <label for="extraRedirects">Extra Redirect URLs</label>
+      <textarea id="extraRedirects" style="min-height: 80px;" placeholder="https://app.example.com&#10;https://another.domain.com"></textarea>
+      <div class="help-text">One URL per line. Injected as ADDITIONAL_REDIRECT_URLS comma-separated list.</div>
+    </div>
+  </div>
+
+  <div class="card" id="step4Card" style="display: none;">
+    <div class="card-title">Step 4: Generated Output</div>
+    <div class="card-subtitle">All configs generated successfully. Copy the resources below.</div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tab-env">Environment File (.env)</div>
+      <div class="tab" data-tab="tab-compose">Docker Compose</div>
+      <div class="tab" data-tab="tab-sql">SQL Command</div>
     </div>
 
-    <div class="modal-pane" id="pane-smtp">
-      <h3 style="margin-bottom:10px;">📧 SMTP Configuration</h3>
-      <div class="hint" style="margin-bottom:10px;">Optional. Leave empty if not using email auth.</div>
-      <div id="smtpFields"></div>
+    <div class="tab-content active" id="tab-env">
+      <div class="btn-group" style="margin-bottom: 15px; margin-top: 0;">
+        <button class="btn primary" id="copyEnvBtn">Copy .env</button>
+        <button class="btn" id="downloadEnvBtn">Download .env</button>
+      </div>
+      <pre class="output-pre" id="outputEnvText"></pre>
     </div>
 
-    <div class="modal-pane" id="pane-shared">
-      <h3 style="margin-bottom:10px;">🟢 Shared Secrets</h3>
-      <div class="hint" style="margin-bottom:10px;">Copied from hub. Masked. Empty values will be auto-generated by Coolify on sibling deploy (for <code>SERVICE_PASSWORD_*</code>).</div>
-      <div id="sharedFields"></div>
+    <div class="tab-content" id="tab-compose">
+      <div class="btn-group" style="margin-bottom: 15px; margin-top: 0;">
+        <button class="btn primary" id="copyComposeBtn">Copy Compose</button>
+        <button class="btn" id="downloadComposeBtn">Download docker-compose.yml</button>
+      </div>
+      <pre class="output-pre" id="outputComposeText"></pre>
     </div>
 
-    <div class="modal-pane" id="pane-settings">
-      <h3 style="margin-bottom:10px;">⚙️ Settings &amp; Flags</h3>
-      <div class="hint" style="margin-bottom:10px;">Defaults are sensible. Edit if you need custom behavior. Changes apply to all siblings.</div>
-      <div id="settingsFields"></div>
+    <div class="tab-content" id="tab-sql">
+      <div class="callout">
+        <div class="callout-title">Database Creation Required</div>
+        <div class="callout-body">This creates the sibling database on the hub's Postgres. Run this once before deploying the sibling stack.</div>
+      </div>
+      <div class="btn-group" style="margin-bottom: 15px; margin-top: 0;">
+        <button class="btn primary" id="copySqlBtn">Copy SQL</button>
+      </div>
+      <pre class="output-pre" id="outputSqlText"></pre>
     </div>
+  </div>
 
-    <div class="btn-row" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
-      <button onclick="saveReusables()">Save Reusables</button>
-      <button class="secondary" onclick="closeReusablesModal()">Cancel</button>
-    </div>
+  <div class="reset-container">
+    <button class="btn danger" id="resetAllBtn">Reset Wizard</button>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script>
-// ─── State ─────────────────────────────────────────────────
-const HOSTNAME_KEYS = ['POSTGRES_HOSTNAME', 'MINIO_HOSTNAME', 'ANALYTICS_HOSTNAME'];
-const SMTP_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_ADMIN_EMAIL', 'SMTP_SENDER_NAME'];
-const SHARED_KEYS = [
-  'SERVICE_PASSWORD_POSTGRES', 'SERVICE_PASSWORD_JWT',
-  'SERVICE_SUPABASEANON_KEY', 'SERVICE_SUPABASESERVICE_KEY',
+// Static lean compose template from experiment-lean-compose.yml
+const LEAN_COMPOSE_TEMPLATE = `services:
+  # ─── Gateway ─────────────────────────────────────────────────
+  supabase-kong:
+    image: 'kong/kong:3.9.1'
+    entrypoint: /home/kong/kong-entrypoint.sh
+    healthcheck:
+      test: ['CMD', 'kong', 'health']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      - SERVICE_URL_SUPABASEKONG_8000
+      - 'KONG_PORT_MAPS=443:8000'
+      - 'JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/usr/local/kong/kong.yml
+      - 'KONG_DNS_ORDER=LAST,A,CNAME'
+      - KONG_DNS_NOT_FOUND_TTL=1
+      - 'KONG_PLUGINS=request-transformer,cors,key-auth,acl,basic-auth,request-termination,ip-restriction,post-function'
+      - KONG_NGINX_PROXY_PROXY_BUFFER_SIZE=160k
+      - 'KONG_NGINX_PROXY_PROXY_BUFFERS=64 160k'
+      - 'KONG_PROXY_ACCESS_LOG=/dev/stdout combined'
+      - 'SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SUPABASE_SERVICE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'SUPABASE_PUBLISHABLE_KEY=\${SUPABASE_PUBLISHABLE_KEY:-}'
+      - 'SUPABASE_SECRET_KEY=\${SUPABASE_SECRET_KEY:-}'
+      - 'ANON_KEY_ASYMMETRIC=\${ANON_KEY_ASYMMETRIC:-}'
+      - 'SERVICE_ROLE_KEY_ASYMMETRIC=\${SERVICE_ROLE_KEY_ASYMMETRIC:-}'
+      - 'DASHBOARD_USERNAME=\${SERVICE_USER_ADMIN}'
+      - 'DASHBOARD_PASSWORD=\${SERVICE_PASSWORD_ADMIN}'
+      - 'KONG_STORAGE_CONNECT_TIMEOUT=\${KONG_STORAGE_CONNECT_TIMEOUT:-60}'
+      - 'KONG_STORAGE_WRITE_TIMEOUT=\${KONG_STORAGE_WRITE_TIMEOUT:-3600}'
+      - 'KONG_STORAGE_READ_TIMEOUT=\${KONG_STORAGE_READ_TIMEOUT:-3600}'
+      - 'KONG_STORAGE_REQUEST_BUFFERING=\${KONG_STORAGE_REQUEST_BUFFERING:-false}'
+      - 'KONG_STORAGE_RESPONSE_BUFFERING=\${KONG_STORAGE_RESPONSE_BUFFERING:-false}'
+    volumes:
+      - type: bind
+        source: ./volumes/api/kong-entrypoint.sh
+        target: /home/kong/kong-entrypoint.sh
+      - type: bind
+        source: ./volumes/api/kong.yml
+        target: /home/kong/temp.yml
+
+  # ─── REST API (PostgREST) ────────────────────────────────────
+  supabase-rest:
+    image: 'postgrest/postgrest:v14.6'
+    environment:
+      - 'PGRST_DB_URI=postgres://authenticator:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - 'PGRST_DB_SCHEMAS=\${PGRST_DB_SCHEMAS:-public,storage,graphql_public}'
+      - 'PGRST_DB_MAX_ROWS=\${PGRST_DB_MAX_ROWS:-1000}'
+      - 'PGRST_DB_EXTRA_SEARCH_PATH=\${PGRST_DB_EXTRA_SEARCH_PATH:-public}'
+      - PGRST_DB_ANON_ROLE=anon
+      - 'PGRST_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - PGRST_DB_USE_LEGACY_GUCS=false
+      - 'PGRST_APP_SETTINGS_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'PGRST_APP_SETTINGS_JWT_EXP=\${JWT_EXPIRY:-3600}'
+    command: postgrest
+    exclude_from_hc: true
+
+  # ─── Auth (GoTrue) ───────────────────────────────────────────
+  supabase-auth:
+    image: 'supabase/gotrue:v2.186.0'
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:9999/health']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - GOTRUE_API_HOST=0.0.0.0
+      - GOTRUE_API_PORT=9999
+      - 'API_EXTERNAL_URL=\${API_EXTERNAL_URL:-http://supabase-kong:8000}'
+      - GOTRUE_DB_DRIVER=postgres
+      - 'GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - 'GOTRUE_SITE_URL=\${GOTRUE_SITE_URL:-\${SERVICE_URL_SUPABASEKONG}}'
+      - 'GOTRUE_URI_ALLOW_LIST=\${ADDITIONAL_REDIRECT_URLS}'
+      - 'GOTRUE_DISABLE_SIGNUP=\${DISABLE_SIGNUP:-false}'
+      - GOTRUE_JWT_ADMIN_ROLES=service_role
+      - GOTRUE_JWT_AUD=authenticated
+      - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
+      - 'GOTRUE_JWT_EXP=\${JWT_EXPIRY:-3600}'
+      - 'GOTRUE_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'GOTRUE_EXTERNAL_EMAIL_ENABLED=\${ENABLE_EMAIL_SIGNUP:-true}'
+      - 'GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED=\${ENABLE_ANONYMOUS_USERS:-false}'
+      - 'GOTRUE_MAILER_AUTOCONFIRM=\${ENABLE_EMAIL_AUTOCONFIRM:-false}'
+      - 'GOTRUE_SMTP_ADMIN_EMAIL=\${SMTP_ADMIN_EMAIL}'
+      - 'GOTRUE_SMTP_HOST=\${SMTP_HOST}'
+      - 'GOTRUE_SMTP_PORT=\${SMTP_PORT:-587}'
+      - 'GOTRUE_SMTP_USER=\${SMTP_USER}'
+      - 'GOTRUE_SMTP_PASS=\${SMTP_PASS}'
+      - 'GOTRUE_SMTP_SENDER_NAME=\${SMTP_SENDER_NAME}'
+      - 'GOTRUE_MAILER_URLPATHS_INVITE=\${MAILER_URLPATHS_INVITE:-/auth/v1/verify}'
+      - 'GOTRUE_MAILER_URLPATHS_CONFIRMATION=\${MAILER_URLPATHS_CONFIRMATION:-/auth/v1/verify}'
+      - 'GOTRUE_MAILER_URLPATHS_RECOVERY=\${MAILER_URLPATHS_RECOVERY:-/auth/v1/verify}'
+      - 'GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE=\${MAILER_URLPATHS_EMAIL_CHANGE:-/auth/v1/verify}'
+      - 'GOTRUE_EXTERNAL_PHONE_ENABLED=\${ENABLE_PHONE_SIGNUP:-true}'
+      - 'GOTRUE_SMS_AUTOCONFIRM=\${ENABLE_PHONE_AUTOCONFIRM:-true}'
+
+  # ─── Realtime ────────────────────────────────────────────────
+  realtime-dev:
+    image: 'supabase/realtime:v2.76.5'
+    container_name: realtime-dev.supabase-realtime
+    healthcheck:
+      test: ['CMD', 'curl', '-sSfL', '--head', '-o', '/dev/null', '-H', 'Authorization: Bearer \${SERVICE_SUPABASEANON_KEY}', 'http://127.0.0.1:4000/api/tenants/realtime-dev/health']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+      start_period: 10s
+    environment:
+      - PORT=4000
+      - 'DB_HOST=\${POSTGRES_HOSTNAME:-supabase-db}'
+      - 'DB_PORT=\${POSTGRES_PORT:-5432}'
+      - DB_USER=supabase_admin
+      - 'DB_PASSWORD=\${SERVICE_PASSWORD_POSTGRES}'
+      - 'DB_NAME=\${POSTGRES_DB:-postgres}'
+      - 'DB_AFTER_CONNECT_QUERY=SET search_path TO _realtime'
+      - DB_ENC_KEY=supabaserealtime
+      - 'API_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'SECRET_KEY_BASE=\${SECRET_PASSWORD_REALTIME}'
+      - 'METRICS_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'ERL_AFLAGS=-proto_dist inet_tcp'
+      - "DNS_NODES=''"
+      - RLIMIT_NOFILE=10000
+      - APP_NAME=realtime
+      - SEED_SELF_HOST=true
+      - LOG_LEVEL=error
+      - RUN_JANITOR=true
+      - JANITOR_INTERVAL=60000
+      - DISABLE_HEALTHCHECK_LOGGING=true
+    command: "sh -c \\"/app/bin/migrate && /app/bin/realtime eval 'Realtime.Release.seeds(Realtime.Repo)' && /app/bin/server\\"\\n"
+
+  # ─── Storage ─────────────────────────────────────────────────
+  supabase-storage:
+    image: 'supabase/storage-api:v1.44.2'
+    depends_on:
+      supabase-rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:5000/status']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - SERVER_PORT=5000
+      - SERVER_REGION=local
+      - MULTI_TENANT=false
+      - 'AUTH_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'DATABASE_URL=postgres://supabase_storage_admin:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - DB_INSTALL_ROLES=false
+      - STORAGE_BACKEND=s3
+      - STORAGE_S3_BUCKET=stub
+      - 'STORAGE_S3_ENDPOINT=\${STORAGE_S3_ENDPOINT:-http://supabase-minio:9000}'
+      - STORAGE_S3_FORCE_PATH_STYLE=true
+      - STORAGE_S3_REGION=us-east-1
+      - 'AWS_ACCESS_KEY_ID=\${SERVICE_USER_MINIO}'
+      - 'AWS_SECRET_ACCESS_KEY=\${SERVICE_PASSWORD_MINIO}'
+      - UPLOAD_FILE_SIZE_LIMIT=524288000
+      - UPLOAD_FILE_SIZE_LIMIT_STANDARD=524288000
+      - UPLOAD_SIGNED_URL_EXPIRATION_TIME=120
+      - TUS_URL_PATH=/upload/resumable
+      - TUS_MAX_SIZE=3600000
+      - ENABLE_IMAGE_TRANSFORMATION=true
+      - 'IMGPROXY_URL=http://imgproxy:8080'
+      - IMGPROXY_REQUEST_TIMEOUT=15
+      - DATABASE_SEARCH_PATH=storage
+      - NODE_ENV=production
+      - REQUEST_ALLOW_X_FORWARDED_PATH=true
+      - 'ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SERVICE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'POSTGREST_URL=http://supabase-rest:3000'
+      - 'PGRST_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'STORAGE_PUBLIC_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'TENANT_ID=\${STORAGE_TENANT_ID:-storage-single-tenant}'
+
+  imgproxy:
+    image: 'darthsim/imgproxy:v3.30.1'
+    healthcheck:
+      test: ['CMD', 'imgproxy', 'health']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - 'IMGPROXY_BIND=:8080'
+      - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
+      - IMGPROXY_USE_ETAG=true
+      - 'IMGPROXY_AUTO_WEBP=\${IMGPROXY_AUTO_WEBP:-true}'
+      - IMGPROXY_MAX_SRC_RESOLUTION=16.8
+
+  # ─── Studio ──────────────────────────────────────────────────
+  supabase-studio:
+    image: 'supabase/studio:2026.03.16-sha-5528817'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - HOSTNAME=0.0.0.0
+      - 'STUDIO_PG_META_URL=http://supabase-meta:8080'
+      - 'POSTGRES_PASSWORD=\${SERVICE_PASSWORD_POSTGRES}'
+      - 'POSTGRES_HOST=\${POSTGRES_HOSTNAME:-supabase-db}'
+      - 'POSTGRES_PORT=\${POSTGRES_PORT:-5432}'
+      - 'POSTGRES_DB=\${POSTGRES_DB:-postgres}'
+      - 'PGRST_DB_SCHEMAS=\${PGRST_DB_SCHEMAS:-public,storage,graphql_public}'
+      - 'PGRST_DB_MAX_ROWS=\${PGRST_DB_MAX_ROWS:-1000}'
+      - 'PGRST_DB_EXTRA_SEARCH_PATH=\${PGRST_DB_EXTRA_SEARCH_PATH:-public}'
+      - 'DEFAULT_ORGANIZATION_NAME=\${STUDIO_DEFAULT_ORGANIZATION:-Default Organization}'
+      - 'DEFAULT_PROJECT_NAME=\${STUDIO_DEFAULT_PROJECT:-Default Project}'
+      - 'SUPABASE_URL=http://supabase-kong:8000'
+      - 'SUPABASE_PUBLIC_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SUPABASE_SERVICE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'AUTH_JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'PG_META_CRYPTO_KEY=\${SERVICE_PASSWORD_PGMETACRYPTO}'
+      - 'LOGFLARE_API_KEY=\${SERVICE_PASSWORD_LOGFLARE}'
+      - NEXT_PUBLIC_ENABLE_LOGS=false
+      - NEXT_ANALYTICS_BACKEND_PROVIDER=postgres
+    volumes:
+      - './volumes/snippets:/app/snippets'
+      - './volumes/functions:/app/edge-functions'
+
+  supabase-meta:
+    image: 'supabase/postgres-meta:v0.95.2'
+    environment:
+      - PG_META_PORT=8080
+      - 'PG_META_DB_HOST=\${POSTGRES_HOSTNAME:-supabase-db}'
+      - 'PG_META_DB_PORT=\${POSTGRES_PORT:-5432}'
+      - 'PG_META_DB_NAME=\${POSTGRES_DB:-postgres}'
+      - PG_META_DB_USER=supabase_admin
+      - 'PG_META_DB_PASSWORD=\${SERVICE_PASSWORD_POSTGRES}'
+      - 'CRYPTO_KEY=\${SERVICE_PASSWORD_PGMETACRYPTO}'
+
+  # ─── Edge Functions ──────────────────────────────────────────
+  supabase-edge-functions:
+    image: 'supabase/edge-runtime:v1.71.2'
+    healthcheck:
+      test: ['CMD', 'echo', 'Edge Functions is healthy']
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - 'JWT_SECRET=\${SERVICE_PASSWORD_JWT}'
+      - 'SUPABASE_URL=http://supabase-kong:8000'
+      - 'SUPABASE_PUBLIC_URL=\${SERVICE_URL_SUPABASEKONG}'
+      - 'SUPABASE_ANON_KEY=\${SERVICE_SUPABASEANON_KEY}'
+      - 'SUPABASE_SERVICE_ROLE_KEY=\${SERVICE_SUPABASESERVICE_KEY}'
+      - 'SUPABASE_DB_URL=postgresql://postgres:\${SERVICE_PASSWORD_POSTGRES}@\${POSTGRES_HOSTNAME:-supabase-db}:\${POSTGRES_PORT:-5432}/\${POSTGRES_DB:-postgres}'
+      - 'VERIFY_JWT=\${FUNCTIONS_VERIFY_JWT:-false}'
+    volumes:
+      - './volumes/functions:/home/deno/functions'
+      - 'deno-cache:/root/.cache/deno'
+      - type: bind
+        source: ./volumes/functions/main/index.ts
+        target: /home/deno/functions/main/index.ts
+      - type: bind
+        source: ./volumes/functions/hello/index.ts
+        target: /home/deno/functions/hello/index.ts
+    command: ['start', '--main-service', '/home/deno/functions/main']`;
+
+const PER_PROJECT_KEYS = [
+  'SERVICE_FQDN_SUPABASEKONG',
+  'SERVICE_URL_SUPABASEKONG_8000',
+  'SERVICE_URL_SUPABASESTUDIO_3000',
+  'SERVICE_USER_ADMIN',
+  'SERVICE_PASSWORD_ADMIN',
+  'SERVICE_PASSWORD_JWT',
   'SERVICE_PASSWORD_PGMETACRYPTO',
-  'SERVICE_USER_MINIO', 'SERVICE_PASSWORD_MINIO',
-  'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE',
-  'SECRET_PASSWORD_REALTIME',
-  'OPENAI_API_KEY',
-  'SERVICE_ROLE_KEY_ASYMMETRIC', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'ANON_KEY_ASYMMETRIC'
+  'SERVICE_PASSWORD_LOGFLARE',
+  'SERVICE_PASSWORD_SUPAVISORSECRET',
+  'SERVICE_PASSWORD_VAULTENC',
+  'SERVICE_PASSWORD_LOGFLAREPRIVATE',
+  'SERVICE_SUPABASEANON_KEY',
+  'SERVICE_SUPABASESERVICE_KEY',
+  'SUPABASE_PUBLISHABLE_KEY',
+  'SUPABASE_SECRET_KEY',
+  'ANON_KEY_ASYMMETRIC',
+  'SERVICE_ROLE_KEY_ASYMMETRIC'
 ];
-const SETTINGS_DEFAULTS = {
-  POSTGRES_PORT: '5432',
-  PGRST_DB_SCHEMAS: 'public,storage,graphql_public',
-  PGRST_DB_MAX_ROWS: '1000',
-  PGRST_DB_EXTRA_SEARCH_PATH: 'public',
-  STUDIO_DEFAULT_ORGANIZATION: 'Default Organization',
-  JWT_EXPIRY: '3600',
-  DISABLE_SIGNUP: 'false',
-  ENABLE_EMAIL_SIGNUP: 'true',
-  ENABLE_ANONYMOUS_USERS: 'false',
-  ENABLE_EMAIL_AUTOCONFIRM: 'false',
-  MAILER_URLPATHS_INVITE: '/auth/v1/verify',
-  MAILER_URLPATHS_CONFIRMATION: '/auth/v1/verify',
-  MAILER_URLPATHS_RECOVERY: '/auth/v1/verify',
-  MAILER_URLPATHS_EMAIL_CHANGE: '/auth/v1/verify',
-  MAILER_TEMPLATES_INVITE: '',
-  MAILER_TEMPLATES_CONFIRMATION: '',
-  MAILER_TEMPLATES_RECOVERY: '',
-  MAILER_TEMPLATES_MAGIC_LINK: '',
-  MAILER_TEMPLATES_EMAIL_CHANGE: '',
-  MAILER_SUBJECTS_INVITE: '',
-  MAILER_SUBJECTS_CONFIRMATION: '',
-  MAILER_SUBJECTS_RECOVERY: '',
-  MAILER_SUBJECTS_MAGIC_LINK: '',
-  MAILER_SUBJECTS_EMAIL_CHANGE: '',
-  ENABLE_PHONE_SIGNUP: 'true',
-  ENABLE_PHONE_AUTOCONFIRM: 'true',
-  FUNCTIONS_VERIFY_JWT: 'false',
-  IMGPROXY_AUTO_WEBP: 'true',
-  KONG_STORAGE_CONNECT_TIMEOUT: '60',
-  KONG_STORAGE_WRITE_TIMEOUT: '3600',
-  KONG_STORAGE_READ_TIMEOUT: '3600',
-  KONG_STORAGE_REQUEST_BUFFERING: 'false',
-  KONG_STORAGE_RESPONSE_BUFFERING: 'false'
-};
-const SETTINGS_KEYS = Object.keys(SETTINGS_DEFAULTS);
-const AUTO_KEYS = ['POSTGRES_DB', 'STUDIO_DEFAULT_PROJECT', 'STORAGE_TENANT_ID', 'SERVICE_USER_ADMIN', 'KONG_FQDN', 'STUDIO_FQDN'];
-const OVERRIDE_KEYS = ['API_EXTERNAL_URL', 'GOTRUE_SITE_URL', 'SERVICE_PASSWORD_ADMIN', 'ADDITIONAL_REDIRECT_URLS'];
-const AUTOGEN_KEYS = ['SERVICE_PASSWORD_ADMIN', 'SERVICE_PASSWORD_LOGFLARE', 'SERVICE_PASSWORD_LOGFLAREPRIVATE', 'SECRET_PASSWORD_REALTIME'];
 
-const HOSTNAME_DEFAULTS = {
-  POSTGRES_HOSTNAME: 'supabase-db',
-  MINIO_HOSTNAME: 'supabase-minio',
-  ANALYTICS_HOSTNAME: 'supabase-analytics'
-};
+const HUB_OVERRIDE_KEYS = [
+  'POSTGRES_HOSTNAME',
+  'SERVICE_PASSWORD_POSTGRES',
+  'SERVICE_USER_MINIO',
+  'SERVICE_PASSWORD_MINIO',
+  'STORAGE_S3_ENDPOINT'
+];
 
+// App State
 let state = {
-  reusables: {
-    hostnames: {POSTGRES_HOSTNAME: '', MINIO_HOSTNAME: '', ANALYTICS_HOSTNAME: ''},
-    smtp: {SMTP_HOST: '', SMTP_PORT: '587', SMTP_USER: '', SMTP_PASS: '', SMTP_ADMIN_EMAIL: '', SMTP_SENDER_NAME: ''},
-    shared: {},
-    settings: {...SETTINGS_DEFAULTS}
-  },
-  projects: [],
-  currentId: null,
-  urlPatternKong: 'https://{slug}-db.cool.5sites.co:8000',
-  urlPatternStudio: 'https://{slug}.cool.5sites.co:3000',
-  urlPatternApp: 'https://{slug}-app.cool.5sites.co'
+  coolifyEnv: '',
+  hubUuid: 'etbtwewgm8wg4v8zhlkfzjx9',
+  hubPgPass: '',
+  hubMinioUser: '',
+  hubMinioPass: '',
+  siblingDbName: '',
+  siblingDisplayName: '',
+  extraRedirects: ''
 };
 
-// Init shared keys with empty
-SHARED_KEYS.forEach(k => { state.reusables.shared[k] = ''; });
+// DOM elements
+const coolifyEnvInput = document.getElementById('coolifyEnvInput');
+const hubUuidInput = document.getElementById('hubUuid');
+const hubPgPassInput = document.getElementById('hubPgPass');
+const hubMinioUserInput = document.getElementById('hubMinioUser');
+const hubMinioPassInput = document.getElementById('hubMinioPass');
+const siblingDbNameInput = document.getElementById('siblingDbName');
+const siblingDisplayNameInput = document.getElementById('siblingDisplayName');
+const extraRedirectsInput = document.getElementById('extraRedirects');
 
-// ─── Persistence ───────────────────────────────────────────
-function save() { localStorage.setItem('supa-sibling-manager-v2', JSON.stringify(state)); }
-function load() {
-  const raw = localStorage.getItem('supa-sibling-manager-v2');
-  if (raw) {
+const envBadge = document.getElementById('envBadge');
+const summaryHeader = document.getElementById('summaryHeader');
+const summaryContent = document.getElementById('summaryContent');
+const tokenList = document.getElementById('tokenList');
+const overrideList = document.getElementById('overrideList');
+const missingList = document.getElementById('missingList');
+const tokenCount = document.getElementById('tokenCount');
+const overrideCount = document.getElementById('overrideCount');
+const missingCount = document.getElementById('missingCount');
+
+const derivedPgHost = document.getElementById('derivedPgHost');
+const derivedS3Endpoint = document.getElementById('derivedS3Endpoint');
+
+const pStep1 = document.getElementById('pStep1');
+const pStep2 = document.getElementById('pStep2');
+const pStep3 = document.getElementById('pStep3');
+const pStep4 = document.getElementById('pStep4');
+const progressBarFill = document.getElementById('progressBarFill');
+
+const step4Card = document.getElementById('step4Card');
+const outputEnvText = document.getElementById('outputEnvText');
+const outputComposeText = document.getElementById('outputComposeText');
+const outputSqlText = document.getElementById('outputSqlText');
+
+// Load state from localStorage on startup
+function loadState() {
+  const hubSaved = localStorage.getItem('supabase-hub-config');
+  if (hubSaved) {
     try {
-      const parsed = JSON.parse(raw);
-      // Merge to ensure new keys exist
-      state = {
-        ...state,
-        ...parsed,
-        reusables: {
-          ...state.reusables,
-          ...(parsed.reusables || {}),
-          hostnames: {...state.reusables.hostnames, ...((parsed.reusables||{}).hostnames||{})},
-          smtp: {...state.reusables.smtp, ...((parsed.reusables||{}).smtp||{})},
-          shared: {...state.reusables.shared, ...((parsed.reusables||{}).shared||{})},
-          settings: {...state.reusables.settings, ...((parsed.reusables||{}).settings||{})}
-        }
-      };
-    } catch(e) { console.warn('Load failed', e); }
+      const parsed = JSON.parse(hubSaved);
+      state.hubUuid = parsed.hubUuid || state.hubUuid;
+      state.hubPgPass = parsed.hubPgPass || '';
+      state.hubMinioUser = parsed.hubMinioUser || '';
+      state.hubMinioPass = parsed.hubMinioPass || '';
+    } catch(e) {}
   }
-}
 
-// ─── Reusables Modal ───────────────────────────────────────
-function openReusablesModal() {
-  // Pre-fill textarea with current reusables
-  const all = {...state.reusables.hostnames, ...state.reusables.smtp, ...state.reusables.shared, ...state.reusables.settings};
-  const text = Object.entries(all).filter(([k,v]) => v).map(([k,v]) => `${k}=${v}`).join('\n');
-  document.getElementById('bulkInput').value = text;
-  renderHostnameFields();
-  renderSmtpFields();
-  renderSharedFields();
-  renderSettingsFields();
-  document.getElementById('reusablesModal').classList.add('show');
-}
-function closeReusablesModal() {
-  document.getElementById('reusablesModal').classList.remove('show');
-}
-function switchTab(name) {
-  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.modal-pane').forEach(p => p.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('pane-' + name).classList.add('active');
-}
-function renderHostnameFields() {
-  document.getElementById('hostnameFields').innerHTML = HOSTNAME_KEYS.map(k => {
-    const v = state.reusables.hostnames[k] || '';
-    const def = HOSTNAME_DEFAULTS[k];
-    return `
-      <div class="field-row">
-        <label>${k}</label>
-        <input type="text" value="${escAttr(v)}" placeholder="e.g. supabase-mobile-apps-abc123-db"
-               class="${v ? '' : 'unset'}"
-               oninput="state.reusables.hostnames['${k}']=this.value; this.className=this.value?'':'unset';">
-      </div>
-      <div class="hint" style="margin:-2px 0 8px 230px;">Fallback default: <code>${def}</code> (standalone mode)</div>
-    `;
-  }).join('');
-}
-function renderSmtpFields() {
-  document.getElementById('smtpFields').innerHTML = SMTP_KEYS.map(k => {
-    const v = state.reusables.smtp[k] || '';
-    return `
-      <div class="field-row">
-        <label>${k}</label>
-        <input type="text" value="${escAttr(v)}" placeholder="${k.includes('PORT') ? '587' : ''}"
-               oninput="state.reusables.smtp['${k}']=this.value;">
-      </div>
-    `;
-  }).join('');
-}
-function renderSharedFields() {
-  document.getElementById('sharedFields').innerHTML = SHARED_KEYS.map(k => {
-    const v = state.reusables.shared[k] || '';
-    const isAutoGen = AUTOGEN_KEYS.includes(k);
-    return `
-      <div class="field-row">
-        <label>${k}</label>
-        <input type="text" value="${escAttr(v)}" placeholder="${isAutoGen ? 'empty = Coolify auto-generates' : 'set from hub'}"
-               oninput="state.reusables.shared['${k}']=this.value;">
-      </div>
-    `;
-  }).join('');
-}
-function renderSettingsFields() {
-  document.getElementById('settingsFields').innerHTML = SETTINGS_KEYS.map(k => {
-    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
-    const isDefault = v === SETTINGS_DEFAULTS[k];
-    return `
-      <div class="field-row">
-        <label>${k}</label>
-        <input type="text" value="${escAttr(v)}" placeholder="default: ${escAttr(SETTINGS_DEFAULTS[k])}"
-               class="${isDefault ? '' : 'overridden'}"
-               oninput="state.reusables.settings['${k}']=this.value; this.className=this.value===SETTINGS_DEFAULTS['${k}']?'':'overridden';">
-      </div>
-    `;
-  }).join('');
-}
-function parseBulk() {
-  const text = document.getElementById('bulkInput').value;
-  const parsed = parseEnv(text);
-  if (Object.keys(parsed).length === 0) {
-    toast('No KEY=VALUE pairs found');
-    return;
+  const wizardSaved = localStorage.getItem('supabase-sibling-wizard');
+  if (wizardSaved) {
+    try {
+      const parsed = JSON.parse(wizardSaved);
+      state.coolifyEnv = parsed.coolifyEnv || '';
+      state.siblingDbName = parsed.siblingDbName || '';
+      state.siblingDisplayName = parsed.siblingDisplayName || '';
+      state.extraRedirects = parsed.extraRedirects || '';
+    } catch(e) {}
   }
-  HOSTNAME_KEYS.forEach(k => { if (parsed[k]) state.reusables.hostnames[k] = parsed[k]; });
-  SMTP_KEYS.forEach(k => { if (parsed[k]) state.reusables.smtp[k] = parsed[k]; });
-  SHARED_KEYS.forEach(k => { if (parsed[k]) state.reusables.shared[k] = parsed[k]; });
-  SETTINGS_KEYS.forEach(k => { if (parsed[k]) state.reusables.settings[k] = parsed[k]; });
-  renderHostnameFields();
-  renderSmtpFields();
-  renderSharedFields();
-  renderSettingsFields();
-  toast(`Parsed ${Object.keys(parsed).length} vars`);
-  save();
-}
-function saveReusables() {
-  save();
-  closeReusablesModal();
-  render();
-  toast('Reusables saved');
+
+  // Set values to inputs
+  coolifyEnvInput.value = state.coolifyEnv;
+  hubUuidInput.value = state.hubUuid;
+  hubPgPassInput.value = state.hubPgPass;
+  hubMinioUserInput.value = state.hubMinioUser;
+  hubMinioPassInput.value = state.hubMinioPass;
+  siblingDbNameInput.value = state.siblingDbName;
+  siblingDisplayNameInput.value = state.siblingDisplayName;
+  extraRedirectsInput.value = state.extraRedirects;
+
+  updateDerivedHubFields();
+  parseAndCategorize();
+  updateProgress();
 }
 
-// ─── Project CRUD ──────────────────────────────────────────
-function newProject() {
-  const name = prompt('Project name (e.g., Aida, Onepm, Mobile Apps):');
-  if (name === null) return;
-  const cleanName = name.trim();
-  if (!cleanName) return;
-  const proj = {
-    id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    name: cleanName,
-    slug: slugify(cleanName),
-    overrides: {},
-    publicUrls: { kong: '', studio: '' },
-    health: { kong: 'unknown', studio: 'unknown' },
-    healthAt: null,
-    deployedAt: null,
-    createdAt: new Date().toISOString()
-  };
-  state.projects.push(proj);
-  state.currentId = proj.id;
-  save();
-  render();
-  // Focus name field after render
-  setTimeout(() => {
-    const nameInput = document.querySelector('input[data-role="name"]');
-    if (nameInput) { nameInput.focus(); nameInput.select(); }
-  }, 0);
-}
-function deleteProject(id) {
-  if (!confirm('Delete this project?')) return;
-  state.projects = state.projects.filter(p => p.id !== id);
-  if (state.currentId === id) state.currentId = state.projects[0]?.id || null;
-  save();
-  render();
-}
-function selectProject(id) { state.currentId = id; render(); }
-
-// ─── Auto-Generation ───────────────────────────────────────
-function slugify(name) {
-  return (name || '').toLowerCase().trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-+/g, '-') || 'project';
-}
-function getAutoValue(key, proj) {
-  const slug = proj.slug || slugify(proj.name);
-  switch(key) {
-    case 'POSTGRES_DB': return slug;
-    case 'STUDIO_DEFAULT_PROJECT': return proj.name;
-    case 'STORAGE_TENANT_ID': return slug;
-    case 'SERVICE_USER_ADMIN': return `${slug}_admin`;
-    case 'KONG_FQDN': return state.urlPatternKong.replace('{slug}', slug);
-    case 'STUDIO_FQDN': return state.urlPatternStudio.replace('{slug}', slug);
-    default: return '';
-  }
-}
-function getFinalValue(key, proj) {
-  if (proj.overrides[key] !== undefined && proj.overrides[key] !== '') return proj.overrides[key];
-  if (AUTO_KEYS.includes(key)) return getAutoValue(key, proj);
-  const slug = proj.slug || slugify(proj.name);
-  if (key === 'API_EXTERNAL_URL') return state.urlPatternKong.replace('{slug}', slug);
-  if (key === 'GOTRUE_SITE_URL') return state.urlPatternApp.replace('{slug}', slug);
-  return '';
+function saveWizardState() {
+  state.coolifyEnv = coolifyEnvInput.value;
+  state.siblingDbName = siblingDbNameInput.value;
+  state.siblingDisplayName = siblingDisplayNameInput.value;
+  state.extraRedirects = extraRedirectsInput.value;
+  localStorage.setItem('supabase-sibling-wizard', JSON.stringify({
+    coolifyEnv: state.coolifyEnv,
+    siblingDbName: state.siblingDbName,
+    siblingDisplayName: state.siblingDisplayName,
+    extraRedirects: state.extraRedirects
+  }));
 }
 
-// ─── Health Check ──────────────────────────────────────────
-async function checkHealth(url) {
-  if (!url) return 'unknown';
-  try {
-    await fetch(url, { mode: 'no-cors', cache: 'no-store' });
-    return 'live';
-  } catch (e) { return 'dead'; }
-}
-async function checkProjectHealth(proj) {
-  if (!proj.publicUrls.kong && !proj.publicUrls.studio) return;
-  const statusEl = document.getElementById('healthStatus');
-  if (statusEl) statusEl.innerHTML = '<span class="health-pill checking">⟳ Checking...</span>';
-  const [k, s] = await Promise.all([checkHealth(proj.publicUrls.kong), checkHealth(proj.publicUrls.studio)]);
-  proj.health = { kong: k, studio: s };
-  proj.healthAt = new Date().toISOString();
-  save();
-  renderSidebar();
-  renderMain();
+function updateDerivedHubFields() {
+  const uuid = hubUuidInput.value.trim() || 'etbtwewgm8wg4v8zhlkfzjx9';
+  derivedPgHost.textContent = `supabase-db-${uuid}`;
+  derivedS3Endpoint.textContent = `http://supabase-minio-${uuid}:9000`;
 }
 
-// ─── Output Generation ─────────────────────────────────────
-function generateOutput(proj) {
-  const lines = [];
-  lines.push('# ── 🔵 Hostnames (from Reusables) ────────────────────────');
-  HOSTNAME_KEYS.forEach(k => {
-    const v = state.reusables.hostnames[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── 🟢 Shared Secrets (from Reusables) ──────────────────');
-  SHARED_KEYS.forEach(k => {
-    const v = state.reusables.shared[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── ⚙️ Settings (from Reusables) ─────────────────────────');
-  SETTINGS_KEYS.forEach(k => {
-    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── 📧 SMTP (from Reusables) ────────────────────────────');
-  SMTP_KEYS.forEach(k => {
-    const v = state.reusables.smtp[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── 🟡 Per-Sibling Config ────────────────────────────────');
-  [...AUTO_KEYS, ...OVERRIDE_KEYS].forEach(k => {
-    const v = getFinalValue(k, proj);
-    lines.push(`${k}=${v || ''}`);
-  });
-  lines.push('');
-  lines.push('# ── 🌐 Service URLs (from FQDNs, Coolify format with port) ──');
-  const kongFqdnRaw = getFinalValue('KONG_FQDN', proj);
-  const studioFqdnRaw = getFinalValue('STUDIO_FQDN', proj);
-  // Strip protocol for FQDN-only vars
-  const kongFqdn = kongFqdnRaw.replace(/^https?:\/\//, '');
-  const studioFqdn = studioFqdnRaw.replace(/^https?:\/\//, '');
-  // Single var per service, FQDN includes port per Coolify format
-  lines.push(`SERVICE_FQDN_SUPABASEKONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASEKONG=${kongFqdnRaw}`);
-  lines.push(`SERVICE_FQDN_SUPABASE_KONG=${kongFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_KONG=${kongFqdnRaw}`);
-  lines.push(`SERVICE_FQDN_SUPABASESTUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASESTUDIO=${studioFqdnRaw}`);
-  lines.push(`SERVICE_FQDN_SUPABASE_STUDIO=${studioFqdn}`);
-  lines.push(`SERVICE_URL_SUPABASE_STUDIO=${studioFqdnRaw}`);
-  return lines.join('\n');
-}
+// Collapsible headers logic
+summaryHeader.addEventListener('click', () => {
+  summaryHeader.classList.toggle('closed');
+  summaryContent.classList.toggle('hidden');
+});
 
-// ─── Renderers ─────────────────────────────────────────────
-function renderSidebar() {
-  const list = document.getElementById('projectList');
-  if (state.projects.length === 0) {
-    list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.85rem;text-align:center;">No projects yet.<br>Click "+ New Project".</div>';
-    return;
-  }
-  list.innerHTML = state.projects.map(p => {
-    const isActive = p.id === state.currentId;
-    return `
-      <div class="project-item ${isActive ? 'active' : ''}" onclick="selectProject('${p.id}')">
-        <span class="status-dot" style="background:${getStatusColor(p)};"></span>
-        <div style="flex:1;overflow:hidden;">
-          <div class="name">${escHtml(p.name)}</div>
-          <div class="meta">${getStatusIcon(p)} ${p.deployedAt ? 'deployed' : 'draft'}</div>
-        </div>
-        <button class="secondary" style="padding:2px 6px;font-size:0.7rem;" onclick="event.stopPropagation();deleteProject('${p.id}')">×</button>
-      </div>`;
-  }).join('');
-}
-function getStatusColor(p) {
-  if (!p.deployedAt) return 'var(--warn)';
-  if (p.health.kong === 'live' || p.health.studio === 'live') return 'var(--accent)';
-  if (p.health.kong === 'dead' && p.health.studio === 'dead') return 'var(--danger)';
-  return 'var(--blue)';
-}
-function getStatusIcon(p) {
-  if (!p.deployedAt) return '✏️';
-  if (p.health.kong === 'live' || p.health.studio === 'live') return '✅';
-  if (p.health.kong === 'dead' && p.health.studio === 'dead') return '❌';
-  return '🔵';
-}
+document.getElementById('hubHeader').addEventListener('click', () => {
+  document.getElementById('hubHeader').classList.toggle('closed');
+  document.getElementById('hubContent').classList.toggle('hidden');
+});
 
-function renderMain() {
-  // Preserve focus + caret across re-render
-  const activeEl = document.activeElement;
-  const focusInfo = activeEl && activeEl.tagName === 'INPUT' ? {
-    key: activeEl.dataset.key || activeEl.dataset.role || null,
-    role: activeEl.dataset.role,
-    caretStart: activeEl.selectionStart,
-    caretEnd: activeEl.selectionEnd
-  } : null;
-
-  const main = document.getElementById('main');
-  if (!state.currentId) {
-    main.innerHTML = `
-      <div class="empty-state">
-        <h2>No project selected</h2>
-        <p>Create a new project or set up Reusables first.</p>
-        <div class="btn-row" style="justify-content:center;">
-          <button onclick="newProject()">+ New Project</button>
-          <button class="secondary" onclick="openReusablesModal()">Configure Reusables</button>
-        </div>
-      </div>`;
-    return;
-  }
-  const proj = state.projects.find(p => p.id === state.currentId);
-  if (!proj) return;
-
-  // Reusables summary (compact)
-  const hostCount = HOSTNAME_KEYS.filter(k => state.reusables.hostnames[k]).length;
-  const smtpCount = SMTP_KEYS.filter(k => state.reusables.smtp[k]).length;
-  const sharedCount = SHARED_KEYS.filter(k => state.reusables.shared[k]).length;
-  const sharedAutogen = SHARED_KEYS.filter(k => !state.reusables.shared[k] && AUTOGEN_KEYS.includes(k)).length;
-  const settingsCustom = SETTINGS_KEYS.filter(k => state.reusables.settings[k] && state.reusables.settings[k] !== SETTINGS_DEFAULTS[k]).length;
-
-  // Auto fields (yellow)
-  const autoFields = AUTO_KEYS.map(k => {
-    const auto = getAutoValue(k, proj);
-    const override = proj.overrides[k];
-    const isOverridden = override !== undefined && override !== '';
-    const val = isOverridden ? override : auto;
-    return `
-      <div class="field">
-        <label>${k}</label>
-        <input type="text" data-role="field" data-key="${k}" value="${escAttr(val)}" placeholder="auto: ${escAttr(auto)}"
-          class="${isOverridden ? 'overridden' : 'auto'}"
-          oninput="updateField('${k}', this.value)">
-        <span class="hint-icon ${isOverridden ? 'ok' : ''}">${isOverridden ? '✎' : '⚡'}</span>
-      </div>`;
-  }).join('');
-
-  const overrideFields = OVERRIDE_KEYS.map(k => {
-    const val = getFinalValue(k, proj);
-    const isAuto = !proj.overrides[k];
-    const isAutogen = AUTOGEN_KEYS.includes(k) && !val;
-    return `
-      <div class="field">
-        <label>${k}</label>
-        <input type="text" data-role="field" data-key="${k}" value="${escAttr(val)}" placeholder="${escAttr(getPlaceholder(k, proj))}"
-          class="${isAutogen ? 'empty-warn' : ''}"
-          oninput="updateField('${k}', this.value)">
-        <span class="hint-icon ${isAutogen ? 'danger' : isAuto ? 'warn' : 'ok'}">${isAutogen ? '∅' : isAuto ? '⚡' : '✎'}</span>
-      </div>`;
-  }).join('');
-
-  // Live preview lines
-  const previewLines = [...AUTO_KEYS, ...OVERRIDE_KEYS].map(k => {
-    const val = getFinalValue(k, proj);
-    const isOverride = proj.overrides[k] !== undefined && proj.overrides[k] !== '';
-    const isAuto = AUTO_KEYS.includes(k) && !isOverride;
-    const isAutogen = !val && AUTOGEN_KEYS.includes(k);
-    const cls = isAutogen ? 'autogen' : !val ? 'empty' : isOverride ? 'override' : isAuto ? 'auto' : '';
-    const display = isAutogen ? '(Coolify auto-gen)' : val || '(empty)';
-    return `<div class="line"><span class="key">${k}</span><span class="val ${cls}">${escHtml(display)}</span></div>`;
-  }).join('');
-
-  const healthPill = (status) => {
-    const cls = status === 'live' ? 'live' : status === 'dead' ? 'dead' : 'unknown';
-    const icon = status === 'live' ? '●' : status === 'dead' ? '✕' : '?';
-    return `<span class="health-pill ${cls}">${icon} ${status}</span>`;
-  };
-
-  main.innerHTML = `
-    <div class="main-header">
-      <div style="display:flex;align-items:center;gap:12px;flex:1;">
-        <input type="text" value="${escAttr(proj.name)}" data-role="name"
-               style="background:transparent;border:none;color:var(--text);font-size:1.4rem;font-weight:600;min-width:200px;"
-               oninput="updateName(this.value)">
-        <input type="text" value="${escAttr(proj.slug)}" data-role="slug"
-               style="background:transparent;border:none;color:var(--muted);font-size:0.95rem;font-family:'SF Mono',monospace;width:140px;"
-               oninput="updateSlug(this.value)">
-      </div>
-      <div class="actions">
-        <button onclick="copyOutput()">Copy Env Vars</button>
-        <button class="secondary" onclick="markDeployed()">${proj.deployedAt ? '✓ Deployed' : 'Mark Deployed'}</button>
-      </div>
-    </div>
-
-    <div class="section">
-      <h3>📦 Reusables Summary <span class="badge ${hostCount === 3 ? 'ok' : 'bad'}">${hostCount}/3 hostnames</span></h3>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.82rem;color:var(--muted);">
-        <span>🔵 Hostnames: <strong style="color:${hostCount === 3 ? 'var(--accent)' : 'var(--danger)'}">${hostCount}/3</strong></span>
-        <span>🟢 Shared: <strong style="color:var(--accent)">${sharedCount} set</strong>, <span style="color:var(--warn)">${sharedAutogen} auto-gen</span></span>
-        <span>⚙️ Settings: <strong style="color:var(--accent)">${settingsCustom} customized</strong></span>
-        <span>📧 SMTP: <strong style="color:${smtpCount > 0 ? 'var(--accent)' : 'var(--muted)'}">${smtpCount > 0 ? smtpCount + '/6' : 'off'}</strong></span>
-        <button class="secondary" style="margin-left:auto;padding:4px 10px;font-size:0.78rem;" onclick="openReusablesModal()">Edit Reusables</button>
-      </div>
-    </div>
-
-    <div class="section sibling">
-      <h3>🟡 Per-Sibling Config <span class="badge info">Auto from name</span></h3>
-      <div class="hint" style="margin-bottom:10px;">Yellow fields auto-generate from project name. Edit to override (turns green). ∅ = Coolify auto-generates random.</div>
-      ${autoFields}
-      <div style="margin-top:14px;"></div>
-      ${overrideFields}
-      <div style="margin-top:16px;">
-        <h3 style="margin-bottom:6px;">Live Preview (per-sibling only)</h3>
-        <div class="preview">${previewLines}</div>
-      </div>
-    </div>
-
-    <div class="section urls">
-      <h3>🌐 Public URLs <span class="badge ${(proj.publicUrls.kong || proj.publicUrls.studio) ? 'ok' : 'info'}">${(proj.publicUrls.kong?1:0) + (proj.publicUrls.studio?1:0)}/2 set</span></h3>
-      <div class="hint" style="margin-bottom:10px;">After deploying in Coolify, paste the assigned URLs for health checking. <strong>Important:</strong> edit these FQDNs in Coolify UI (service → Domains) to match patterns below — auto-generated URLs are ugly.</div>
-      <div class="field">
-        <label>Kong URL</label>
-        <input type="text" data-role="url" data-key="kong" value="${escAttr(proj.publicUrls.kong)}" placeholder="${escAttr(state.urlPatternKong.replace('{slug}', proj.slug))}"
-               oninput="updatePublicUrl('kong', this.value)">
-        ${healthPill(proj.health.kong)}
-      </div>
-      <div class="field">
-        <label>Studio URL</label>
-        <input type="text" data-role="url" data-key="studio" value="${escAttr(proj.publicUrls.studio)}" placeholder="${escAttr(state.urlPatternStudio.replace('{slug}', proj.slug))}"
-               oninput="updatePublicUrl('studio', this.value)">
-        ${healthPill(proj.health.studio)}
-      </div>
-      <div class="btn-row">
-        <button class="warn" onclick="checkProjectHealth(getCurrentProj())">Run Health Check</button>
-      </div>
-      <div id="healthStatus" style="margin-top:8px;">${proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : ''}</div>
-    </div>
-
-    <div class="section">
-      <h3>🚀 Post-Deploy Steps <span class="badge info">Coolify UI</span></h3>
-      <div class="hint" style="margin-bottom:10px;">After pasting env vars and deploying, do these in Coolify UI for clean URLs + proper auth:</div>
-      <ol style="margin-left:20px;font-size:0.85rem;line-height:1.8;">
-        <li><strong>Set Kong FQDN</strong> — Coolify → Service → <code>supabase-kong</code> → Domains → set to <code>${escHtml(state.urlPatternKong.replace('{slug}', proj.slug))}</code></li>
-        <li><strong>Set Studio FQDN</strong> — Coolify → Service → <code>supabase-studio</code> → Domains → set to <code>${escHtml(state.urlPatternStudio.replace('{slug}', proj.slug))}</code></li>
-        <li><strong>Create Database</strong> — Run in hub's PG: <code>CREATE DATABASE ${escHtml(proj.slug)};</code></li>
-        <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
-        <li><strong>Verify</strong> — Open Studio URL, should see Supabase login</li>
-        <li><strong>Paste URLs above</strong> — Copy from Coolify, paste in fields above for health checks</li>
-      </ol>
-    </div>
-
-    <div class="section output">
-      <h3>📋 Final Output <span class="badge info">Paste to Coolify</span></h3>
-      <div class="hint" style="margin-bottom:10px;">All sections combined. Lines starting with <code>#</code> are comments — Coolify ignores them. Empty <code>SERVICE_PASSWORD_*</code> lines are commented so Coolify auto-generates.</div>
-      <textarea class="output" id="outputText" readonly>${generateOutput(proj)}</textarea>
-      <div class="btn-row">
-        <button onclick="copyOutput()">Copy to Clipboard</button>
-        <button class="secondary" onclick="downloadOutput()">Download .env</button>
-      </div>
-    </div>
-  `;
-
-  // Restore focus + caret
-  if (focusInfo && focusInfo.role) {
-    const sel = focusInfo.key ? `input[data-role="${focusInfo.role}"][data-key="${focusInfo.key}"]` : `input[data-role="${focusInfo.role}"]`;
-    const newEl = document.querySelector(sel);
-    if (newEl) {
-      newEl.focus();
-      try { newEl.setSelectionRange(focusInfo.caretStart, focusInfo.caretEnd); } catch(e) {}
+// Parse functions
+function parseEnv(text) {
+  const vars = {};
+  const lines = text.split('\n');
+  for (let line of lines) {
+    line = line.trim();
+    if (!line || line.startsWith('#')) continue;
+    const parts = line.split('=');
+    if (parts.length >= 2) {
+      const key = parts[0].trim();
+      const val = parts.slice(1).join('=').trim();
+      vars[key] = val;
     }
   }
+  return vars;
 }
 
-function render() {
-  renderSidebar();
-  renderMain();
+let parseTimeout;
+function debouncedParse() {
+  clearTimeout(parseTimeout);
+  parseTimeout = setTimeout(() => {
+    saveWizardState();
+    parseAndCategorize();
+    updateProgress();
+  }, 300);
 }
 
-// ─── Project Field Updates ─────────────────────────────────
-function getCurrentProj() { return state.projects.find(p => p.id === state.currentId); }
-function updateName(val) {
-  const p = getCurrentProj(); if (!p) return;
-  p.name = val;
-  p.slug = slugify(val);
-  save();
-  renderSidebar();
-  renderMain();
-}
-function updateSlug(val) {
-  const p = getCurrentProj(); if (!p) return;
-  p.slug = slugify(val);
-  save();
-  renderMain();
-}
-function updateField(key, val) {
-  const p = getCurrentProj(); if (!p) return;
-  if (val === '' || val === getAutoValue(key, p)) delete p.overrides[key];
-  else p.overrides[key] = val;
-  save();
-  renderMain();
-}
-function updatePublicUrl(which, val) {
-  const p = getCurrentProj(); if (!p) return;
-  p.publicUrls[which] = val;
-  save();
-}
-function markDeployed() {
-  const p = getCurrentProj(); if (!p) return;
-  p.deployedAt = new Date().toISOString();
-  save();
-  render();
-  toast('Marked as deployed');
-}
+coolifyEnvInput.addEventListener('input', debouncedParse);
 
-// ─── Output Actions ────────────────────────────────────────
-function copyOutput() {
-  const out = document.getElementById('outputText');
-  if (!out) return;
-  out.select();
-  document.execCommand('copy');
-  toast('Copied to clipboard');
-}
-function downloadOutput() {
-  const p = getCurrentProj(); if (!p) return;
-  const blob = new Blob([generateOutput(p)], {type: 'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${p.slug}.env`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+function parseAndCategorize() {
+  const rawText = coolifyEnvInput.value;
+  const parsed = parseEnv(rawText);
+  const keys = Object.keys(parsed);
 
-// ─── Helpers ───────────────────────────────────────────────
-function parseEnv(text) {
-  const result = {};
-  (text || '').split('\n').forEach(line => {
-    line = line.trim();
-    if (!line || line.startsWith('#')) return;
-    const eq = line.indexOf('=');
-    if (eq < 0) return;
-    const key = line.slice(0, eq).trim();
-    let val = line.slice(eq + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) val = val.slice(1, -1);
-    result[key] = val;
+  envBadge.textContent = `${keys.length} variables detected`;
+
+  if (keys.length > 0) {
+    summaryHeader.style.display = 'flex';
+  } else {
+    summaryHeader.style.display = 'none';
+    summaryContent.classList.add('hidden');
+    summaryHeader.classList.add('closed');
+  }
+
+  // Categorize
+  const tokens = [];
+  const overrides = [];
+  const otherVars = [];
+
+  keys.forEach(k => {
+    // Check dynamic match or direct match
+    const isToken = PER_PROJECT_KEYS.some(pk => k === pk || k.startsWith('SERVICE_FQDN_') || k.startsWith('SERVICE_URL_'));
+    if (isToken) {
+      tokens.push(k);
+    } else if (HUB_OVERRIDE_KEYS.includes(k)) {
+      overrides.push(k);
+    } else {
+      otherVars.push(k);
+    }
   });
-  return result;
-}
-function getPlaceholder(key, proj) {
-  const slug = proj.slug || slugify(proj.name);
-  if (key === 'API_EXTERNAL_URL') return state.urlPatternKong.replace('{slug}', slug);
-  if (key === 'GOTRUE_SITE_URL') return state.urlPatternApp.replace('{slug}', slug);
-  if (key === 'SERVICE_PASSWORD_ADMIN') return 'empty = Coolify auto-gen';
-  if (key === 'ADDITIONAL_REDIRECT_URLS') return state.urlPatternApp.replace('{slug}', slug) + '/auth/callback';
-  return '';
-}
-function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function escAttr(s) { return escHtml(s); }
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1500);
-}
-function resetAll() {
-  if (!confirm('Reset everything? All projects and reusables will be lost.')) return;
-  localStorage.removeItem('supa-sibling-manager-v2');
-  location.reload();
+
+  // Render tokens
+  tokenList.innerHTML = '';
+  tokens.sort().forEach(k => {
+    const li = document.createElement('li');
+    li.textContent = k;
+    tokenList.appendChild(li);
+  });
+  tokenCount.textContent = tokens.length;
+
+  // Render overrides
+  overrideList.innerHTML = '';
+  overrides.sort().forEach(k => {
+    const li = document.createElement('li');
+    li.textContent = k;
+    overrideList.appendChild(li);
+  });
+  overrideCount.textContent = overrides.length;
+
+  // Render missing / others
+  missingList.innerHTML = '';
+  const missing = [];
+  if (!keys.includes('SECRET_PASSWORD_REALTIME') && !parsed['SECRET_PASSWORD_REALTIME']) {
+    missing.push('SECRET_PASSWORD_REALTIME');
+  }
+  missing.forEach(k => {
+    const li = document.createElement('li');
+    li.textContent = k;
+    li.style.color = 'var(--danger)';
+    missingList.appendChild(li);
+  });
+  missingCount.textContent = missing.length;
 }
 
-// ─── Init ──────────────────────────────────────────────────
-load();
-render();
+// Hub config save
+document.getElementById('saveHubBtn').addEventListener('click', () => {
+  state.hubUuid = hubUuidInput.value.trim();
+  state.hubPgPass = hubPgPassInput.value.trim();
+  state.hubMinioUser = hubMinioUserInput.value.trim();
+  state.hubMinioPass = hubMinioPassInput.value.trim();
+
+  localStorage.setItem('supabase-hub-config', JSON.stringify({
+    hubUuid: state.hubUuid,
+    hubPgPass: state.hubPgPass,
+    hubMinioUser: state.hubMinioUser,
+    hubMinioPass: state.hubMinioPass
+  }));
+
+  updateDerivedHubFields();
+  updateProgress();
+});
+
+[hubUuidInput, hubPgPassInput, hubMinioUserInput, hubMinioPassInput].forEach(elem => {
+  elem.addEventListener('input', () => {
+    updateDerivedHubFields();
+    updateProgress();
+  });
+});
+
+// Sibling Config Input Change listeners
+siblingDbNameInput.addEventListener('input', (e) => {
+  let val = e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '');
+  e.target.value = val;
+
+  // Auto derive display name if empty or matches previous derived
+  const curDisplay = siblingDisplayNameInput.value.trim();
+  const prevDerived = state.siblingDbName ? state.siblingDbName.charAt(0).toUpperCase() + state.siblingDbName.slice(1) : '';
+  if (!curDisplay || curDisplay === prevDerived) {
+    const derived = val ? val.charAt(0).toUpperCase() + val.slice(1) : '';
+    siblingDisplayNameInput.value = derived;
+  }
+
+  saveWizardState();
+  updateProgress();
+});
+
+siblingDisplayNameInput.addEventListener('input', () => {
+  saveWizardState();
+  updateProgress();
+});
+
+extraRedirectsInput.addEventListener('input', () => {
+  saveWizardState();
+  updateProgress();
+});
+
+// Progress management
+function updateProgress() {
+  const hasEnv = coolifyEnvInput.value.trim().length > 0;
+  const hasHub = hubUuidInput.value.trim() !== '' &&
+                 hubPgPassInput.value.trim() !== '' &&
+                 hubMinioUserInput.value.trim() !== '' &&
+                 hubMinioPassInput.value.trim() !== '';
+  const hasSibling = siblingDbNameInput.value.trim() !== '' &&
+                      siblingDisplayNameInput.value.trim() !== '';
+
+  // Reset progress classes
+  [pStep1, pStep2, pStep3, pStep4].forEach(s => {
+    s.classList.remove('active', 'completed');
+  });
+
+  let fillPercentage = 0;
+
+  if (hasEnv) {
+    pStep1.classList.add('completed');
+    fillPercentage += 33.3;
+  } else {
+    pStep1.classList.add('active');
+  }
+
+  if (hasEnv && hasHub) {
+    pStep2.classList.add('completed');
+    fillPercentage += 33.3;
+  } else if (hasEnv) {
+    pStep2.classList.add('active');
+  }
+
+  if (hasEnv && hasHub && hasSibling) {
+    pStep3.classList.add('completed');
+    fillPercentage += 33.4;
+    pStep4.classList.add('completed');
+    step4Card.style.display = 'block';
+    generateOutputs();
+  } else {
+    if (hasEnv && hasHub) {
+      pStep3.classList.add('active');
+    }
+    step4Card.style.display = 'none';
+  }
+
+  progressBarFill.style.width = `${fillPercentage}%`;
+}
+
+// Generate random hex string for Realtime
+function generateRandomHex(len) {
+  const arr = new Uint8Array(len / 2);
+  window.crypto.getRandomValues(arr);
+  return Array.from(arr, dec => dec.toString(16).padStart(2, '0')).join('');
+}
+
+// Generate the final results
+function generateOutputs() {
+  const parsed = parseEnv(coolifyEnvInput.value);
+  const uuid = hubUuidInput.value.trim();
+  const pgPass = hubPgPassInput.value.trim();
+  const minioUser = hubMinioUserInput.value.trim();
+  const minioPass = hubMinioPassInput.value.trim();
+  const siblingDb = siblingDbNameInput.value.trim();
+  const siblingDisplay = siblingDisplayNameInput.value.trim();
+
+  const redirectLines = extraRedirectsInput.value.split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+  const redirectUrls = redirectLines.join(',');
+
+  // Group 1: Per-project tokens (keep from parsed env as is)
+  const group1 = [];
+  const group2 = [];
+  const group3 = [];
+  const group4 = [];
+
+  // Hub values to override
+  const pgHost = `supabase-db-${uuid}`;
+  const s3Endpoint = `http://supabase-minio-${uuid}:9000`;
+
+  // Merge & generate
+  const allGenerated = { ...parsed };
+  allGenerated['POSTGRES_HOSTNAME'] = pgHost;
+  allGenerated['SERVICE_PASSWORD_POSTGRES'] = pgPass;
+  allGenerated['STORAGE_S3_ENDPOINT'] = s3Endpoint;
+  allGenerated['SERVICE_USER_MINIO'] = minioUser;
+  allGenerated['SERVICE_PASSWORD_MINIO'] = minioPass;
+
+  allGenerated['POSTGRES_DB'] = siblingDb;
+  allGenerated['STORAGE_TENANT_ID'] = siblingDb;
+  allGenerated['STUDIO_DEFAULT_PROJECT'] = siblingDisplay;
+  if (redirectUrls) {
+    allGenerated['ADDITIONAL_REDIRECT_URLS'] = redirectUrls;
+  }
+
+  // Ensure generated if missing
+  if (!allGenerated['SECRET_PASSWORD_REALTIME']) {
+    allGenerated['SECRET_PASSWORD_REALTIME'] = generateRandomHex(64);
+  }
+  if (!allGenerated['POSTGRES_PORT']) {
+    allGenerated['POSTGRES_PORT'] = '5432';
+  }
+  if (!allGenerated['JWT_EXPIRY']) {
+    allGenerated['JWT_EXPIRY'] = '3600';
+  }
+
+  // Build the categorized Env file
+  const keys = Object.keys(allGenerated);
+  keys.forEach(k => {
+    const isToken = PER_PROJECT_KEYS.some(pk => k === pk || k.startsWith('SERVICE_FQDN_') || k.startsWith('SERVICE_URL_'));
+    if (isToken) {
+      group1.push(`${k}=${allGenerated[k]}`);
+    } else if (HUB_OVERRIDE_KEYS.includes(k)) {
+      group2.push(`${k}=${allGenerated[k]}`);
+    } else if (['POSTGRES_DB', 'STORAGE_TENANT_ID', 'STUDIO_DEFAULT_PROJECT', 'ADDITIONAL_REDIRECT_URLS'].includes(k)) {
+      group3.push(`${k}=${allGenerated[k]}`);
+    } else {
+      group4.push(`${k}=${allGenerated[k]}`);
+    }
+  });
+
+  let envOutput = '';
+  if (group1.length > 0) {
+    envOutput += `# ══ Per-Project Tokens (from Coolify) ════════════\n` + group1.sort().join('\n') + '\n\n';
+  }
+  if (group2.length > 0) {
+    envOutput += `# ══ Hub Shared (PG + MinIO) ══════════════════════\n` + group2.sort().join('\n') + '\n\n';
+  }
+  if (group3.length > 0) {
+    envOutput += `# ══ Sibling-Specific ═════════════════════════════\n` + group3.sort().join('\n') + '\n\n';
+  }
+  if (group4.length > 0) {
+    envOutput += `# ══ Generated ════════════════════════════════════\n` + group4.sort().join('\n');
+  }
+
+  outputEnvText.textContent = envOutput.trim();
+
+  // Tab B: Compose Text
+  outputComposeText.textContent = LEAN_COMPOSE_TEMPLATE;
+
+  // Tab C: SQL Command
+  const sqlCommand = `-- Run in HUB's Studio SQL Editor BEFORE deploying:\nCREATE DATABASE ${siblingDb} TEMPLATE sibling_template;`;
+  outputSqlText.textContent = sqlCommand;
+}
+
+// Reset Handler
+document.getElementById('resetAllBtn').addEventListener('click', () => {
+  if (confirm('Are you sure you want to reset all configurations?')) {
+    localStorage.removeItem('supabase-sibling-wizard');
+    state.coolifyEnv = '';
+    state.siblingDbName = '';
+    state.siblingDisplayName = '';
+    state.extraRedirects = '';
+
+    coolifyEnvInput.value = '';
+    siblingDbNameInput.value = '';
+    siblingDisplayNameInput.value = '';
+    extraRedirectsInput.value = '';
+
+    parseAndCategorize();
+    updateProgress();
+  }
+});
+
+// Copy utilities
+function setupCopy(btnId, targetId) {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const text = document.getElementById(targetId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById(btnId);
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    });
+  });
+}
+
+setupCopy('copyEnvBtn', 'outputEnvText');
+setupCopy('copyComposeBtn', 'outputComposeText');
+setupCopy('copySqlBtn', 'outputSqlText');
+
+// Download utilities
+function downloadFile(filename, text) {
+  const element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+}
+
+document.getElementById('downloadEnvBtn').addEventListener('click', () => {
+  downloadFile('.env', document.getElementById('outputEnvText').textContent);
+});
+
+document.getElementById('downloadComposeBtn').addEventListener('click', () => {
+  downloadFile('docker-compose.yml', document.getElementById('outputComposeText').textContent);
+});
+
+// Tabs Switching logic
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    const target = tab.getAttribute('data-tab');
+    document.querySelectorAll('.tab-content').forEach(tc => {
+      tc.classList.remove('active');
+    });
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+// Load on page load
+loadState();
 </script>
-
 </body>
 </html>
