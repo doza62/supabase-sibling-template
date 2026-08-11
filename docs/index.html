@@ -1025,66 +1025,108 @@ async function checkHealth(url) {
 }
 function generateOutput(proj) {
   const lines = [];
-  
-  // Hub-shared (from reusables)
-  lines.push('# ── 🔵 Hub Shared (PG + MinIO) ────────────────────────────');
-  lines.push(`POSTGRES_HOSTNAME=${state.reusables.hostnames.POSTGRES_HOSTNAME || ''}`);
-  lines.push(`MINIO_HOSTNAME=${state.reusables.hostnames.MINIO_HOSTNAME || ''}`);
-  lines.push(`ANALYTICS_HOSTNAME=${state.reusables.hostnames.ANALYTICS_HOSTNAME || ''}`);
-  SHARED_KEYS.forEach(k => {
-    lines.push(`${k}=${state.reusables.shared[k] || ''}`);
-  });
-  
-  // Per-project tokens (from Coolify import)
-  lines.push('');
-  lines.push('# ── 🟣 Per-Project Tokens (from Coolify import) ──────────');
   const hasCoolify = proj.coolifyEnv && Object.keys(proj.coolifyEnv).length;
-  COOLIFY_IMPORT_KEYS.forEach(k => {
-    if (hasCoolify && proj.coolifyEnv[k] !== undefined) {
-      lines.push(`${k}=${proj.coolifyEnv[k]}`);
-    } else {
-      // Backward compatibility: fallback to state.reusables.shared[k]
-      const fallbackVal = state.reusables.shared[k] || '';
-      lines.push(`${k}=${fallbackVal}`);
-    }
-  });
-  if (!hasCoolify) {
-    lines.push('# (Note: Paste from Coolify Environment tab to import per-project tokens)');
-  }
-  
-  // Sibling-specific
-  lines.push('');
-  lines.push('# ── 🟡 Sibling-Specific ────────────────────────────────────');
-  [...AUTO_KEYS, ...OVERRIDE_KEYS].forEach(k => {
-    const v = getFinalValue(k, proj);
-    lines.push(`${k}=${v || ''}`);
-  });
-  
-  // Settings
-  lines.push('');
-  lines.push('# ── ⚙️ Settings ────────────────────────────────────────────');
-  SETTINGS_KEYS.forEach(k => {
-    const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
-    lines.push(`${k}=${v || ''}`);
-  });
-  
-  // SMTP
-  lines.push('');
-  lines.push('# ── 📧 SMTP ────────────────────────────────────────────────');
-  SMTP_KEYS.forEach(k => {
-    lines.push(`${k}=${state.reusables.smtp[k] || ''}`);
-  });
-  
-  // Service URLs from Coolify import (if available)
-  if (proj.coolifyEnv && proj.coolifyEnv.SERVICE_FQDN_SUPABASEKONG) {
+
+  if (hasCoolify) {
+    // ── Mode: Coolify import active ──
+    // Output ALL vars from the Coolify paste, with hub overrides applied.
+    // This preserves every alias var (JWT_SECRET, DB_PASSWORD, etc.)
+    lines.push('# ── 🟣 From Coolify Import (all vars, hub-shared overridden) ──');
+
+    // Hub overrides to apply on top of the Coolify paste
+    const overrides = {};
+    if (state.reusables.hostnames.POSTGRES_HOSTNAME)
+      overrides['POSTGRES_HOSTNAME'] = state.reusables.hostnames.POSTGRES_HOSTNAME;
+    if (state.reusables.shared.SERVICE_PASSWORD_POSTGRES)
+      overrides['SERVICE_PASSWORD_POSTGRES'] = state.reusables.shared.SERVICE_PASSWORD_POSTGRES;
+    if (state.reusables.shared.SERVICE_USER_MINIO)
+      overrides['SERVICE_USER_MINIO'] = state.reusables.shared.SERVICE_USER_MINIO;
+    if (state.reusables.shared.SERVICE_PASSWORD_MINIO)
+      overrides['SERVICE_PASSWORD_MINIO'] = state.reusables.shared.SERVICE_PASSWORD_MINIO;
+
+    // Sibling-specific overrides
+    overrides['POSTGRES_DB'] = proj.slug;
+    overrides['STORAGE_TENANT_ID'] = proj.slug;
+    overrides['STUDIO_DEFAULT_PROJECT'] = proj.name;
+
+    // Output every var from Coolify paste, applying overrides
+    Object.keys(proj.coolifyEnv).forEach(k => {
+      const v = overrides[k] !== undefined ? overrides[k] : proj.coolifyEnv[k];
+      lines.push(`${k}=${v}`);
+    });
+
+    // Add any hub-shared vars NOT already in the paste
     lines.push('');
-    lines.push('# ── 🌐 Service URLs (from Coolify import) ─────────────────');
-    lines.push(`SERVICE_FQDN_SUPABASEKONG=${proj.coolifyEnv.SERVICE_FQDN_SUPABASEKONG || ''}`);
-    lines.push(`SERVICE_URL_SUPABASEKONG=${proj.coolifyEnv.SERVICE_URL_SUPABASEKONG || ''}`);
-    lines.push(`SERVICE_FQDN_SUPABASEKONG_8000=${proj.coolifyEnv.SERVICE_FQDN_SUPABASEKONG_8000 || ''}`);
-    lines.push(`SERVICE_URL_SUPABASEKONG_8000=${proj.coolifyEnv.SERVICE_URL_SUPABASEKONG_8000 || ''}`);
+    lines.push('# ── 🔵 Hub Shared (if not already above) ──────────────────');
+    SHARED_KEYS.forEach(k => {
+      if (proj.coolifyEnv[k] === undefined && state.reusables.shared[k]) {
+        lines.push(`${k}=${state.reusables.shared[k]}`);
+      }
+    });
+    HOSTNAME_KEYS.forEach(k => {
+      if (proj.coolifyEnv[k] === undefined && state.reusables.hostnames[k]) {
+        lines.push(`${k}=${state.reusables.hostnames[k]}`);
+      }
+    });
+
+    // Settings (from reusables) — only if not already in the paste
+    lines.push('');
+    lines.push('# ── ⚙️ Settings (if not already above) ────────────────────');
+    SETTINGS_KEYS.forEach(k => {
+      if (proj.coolifyEnv[k] === undefined) {
+        const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
+        lines.push(`${k}=${v || ''}`);
+      }
+    });
+
+    // SMTP (from reusables)
+    lines.push('');
+    lines.push('# ── 📧 SMTP ────────────────────────────────────────────────');
+    SMTP_KEYS.forEach(k => {
+      if (proj.coolifyEnv[k] === undefined) {
+        lines.push(`${k}=${state.reusables.smtp[k] || ''}`);
+      }
+    });
+
+  } else {
+    // ── Mode: No Coolify import (legacy/fallback) ──
+    // Use the original generation logic with reusables only.
+    lines.push('# ── 🔵 Hub Shared (PG + MinIO) ────────────────────────────');
+    lines.push(`POSTGRES_HOSTNAME=${state.reusables.hostnames.POSTGRES_HOSTNAME || ''}`);
+    lines.push(`MINIO_HOSTNAME=${state.reusables.hostnames.MINIO_HOSTNAME || ''}`);
+    lines.push(`ANALYTICS_HOSTNAME=${state.reusables.hostnames.ANALYTICS_HOSTNAME || ''}`);
+    SHARED_KEYS.forEach(k => {
+      lines.push(`${k}=${state.reusables.shared[k] || ''}`);
+    });
+
+    lines.push('');
+    lines.push('# ── 🟣 Per-Project Tokens (fallback — import from Coolify) ──');
+    lines.push('# (Note: Paste from Coolify Environment tab to import ALL per-project tokens)');
+    COOLIFY_IMPORT_KEYS.forEach(k => {
+      lines.push(`${k}=`);
+    });
+
+    lines.push('');
+    lines.push('# ── 🟡 Sibling-Specific ────────────────────────────────────');
+    [...AUTO_KEYS, ...OVERRIDE_KEYS].forEach(k => {
+      const v = getFinalValue(k, proj);
+      lines.push(`${k}=${v || ''}`);
+    });
+
+    lines.push('');
+    lines.push('# ── ⚙️ Settings ────────────────────────────────────────────');
+    SETTINGS_KEYS.forEach(k => {
+      const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
+      lines.push(`${k}=${v || ''}`);
+    });
+
+    lines.push('');
+    lines.push('# ── 📧 SMTP ────────────────────────────────────────────────');
+    SMTP_KEYS.forEach(k => {
+      lines.push(`${k}=${state.reusables.smtp[k] || ''}`);
+    });
   }
-  
+
   return lines.join('\n');
 }
 
@@ -1369,14 +1411,12 @@ function importCoolifyEnv() {
   const parsed = parseEnv(ta.value);
   const proj = getCurrentProj();
   if (!proj) return;
-  if (!proj.coolifyEnv) proj.coolifyEnv = {};
-  let count = 0;
-  COOLIFY_IMPORT_KEYS.forEach(k => {
-    if (parsed[k]) { proj.coolifyEnv[k] = parsed[k]; count++; }
-  });
+  proj.coolifyEnv = {};
+  Object.keys(parsed).forEach(k => { proj.coolifyEnv[k] = parsed[k]; });
+  const count = Object.keys(proj.coolifyEnv).length;
   save();
   render();
-  toast(count > 0 ? `Imported ${count} per-project tokens` : 'No matching keys found');
+  toast(count > 0 ? `Imported ${count} env vars` : 'No KEY=VALUE pairs found');
 }
 function clearCoolifyEnv() {
   const proj = getCurrentProj();
