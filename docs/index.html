@@ -1055,57 +1055,66 @@ function generateOutput(proj) {
     if (!state.reusables.shared.SERVICE_USER_MINIO) missingHub.push('SERVICE_USER_MINIO');
     if (!state.reusables.shared.SERVICE_PASSWORD_MINIO) missingHub.push('SERVICE_PASSWORD_MINIO');
 
-    // Output every var from Coolify paste, applying overrides
+    // Output every var from Coolify paste, applying overrides silently
     Object.keys(proj.coolifyEnv).forEach(k => {
       const v = overrides[k] !== undefined ? overrides[k] : proj.coolifyEnv[k];
-      const marker = overrides[k] !== undefined ? '  # OVERRIDDEN' : '';
-      lines.push(`${k}=${v}${marker}`);
+      lines.push(`${k}=${v}`);
     });
 
     // Warning if hub shared values not configured
     if (missingHub.length) {
       lines.push('');
       lines.push('# ── ⚠️  WARNING: Hub shared values not configured ─────────');
-      lines.push(`# The following are from the Coolify paste, NOT from the hub:`);
+      lines.push(`# The following are EMPTY — set in Reusables → Shared Secrets:`);
       missingHub.forEach(k => {
-        lines.push(`#   ${k}=${proj.coolifyEnv[k] || '(empty)'}  ← set this in Reusables → Shared Secrets`);
+        lines.push(`#   ${k}  ← from hub's Environment tab`);
       });
-      lines.push(`# If you pasted the SIBLING's env, these are WRONG (random, not hub's).`);
-      lines.push(`# If you pasted the HUB's env, these are correct — ignore this warning.`);
     }
 
-    // Add any hub-shared vars NOT already in the paste
-    lines.push('');
-    lines.push('# ── 🔵 Hub Shared (if not already above) ──────────────────');
+    // Add any hub-shared vars NOT already in the paste (skip empty sections)
+    const hubExtras = [];
     SHARED_KEYS.forEach(k => {
       if (proj.coolifyEnv[k] === undefined && state.reusables.shared[k]) {
-        lines.push(`${k}=${state.reusables.shared[k]}`);
+        hubExtras.push(`${k}=${state.reusables.shared[k]}`);
       }
     });
     HOSTNAME_KEYS.forEach(k => {
       if (proj.coolifyEnv[k] === undefined && state.reusables.hostnames[k]) {
-        lines.push(`${k}=${state.reusables.hostnames[k]}`);
+        hubExtras.push(`${k}=${state.reusables.hostnames[k]}`);
       }
     });
+    if (hubExtras.length) {
+      lines.push('');
+      lines.push('# ── 🔵 Hub Shared (additional) ────────────────────────────');
+      hubExtras.forEach(l => lines.push(l));
+    }
 
-    // Settings (from reusables) — only if not already in the paste
-    lines.push('');
-    lines.push('# ── ⚙️ Settings (if not already above) ────────────────────');
+    // Settings — only if not already in the paste
+    const settingsExtras = [];
     SETTINGS_KEYS.forEach(k => {
       if (proj.coolifyEnv[k] === undefined) {
         const v = state.reusables.settings[k] ?? SETTINGS_DEFAULTS[k];
-        lines.push(`${k}=${v || ''}`);
+        settingsExtras.push(`${k}=${v || ''}`);
       }
     });
+    if (settingsExtras.length) {
+      lines.push('');
+      lines.push('# ── ⚙️ Settings (additional) ──────────────────────────────');
+      settingsExtras.forEach(l => lines.push(l));
+    }
 
-    // SMTP (from reusables)
-    lines.push('');
-    lines.push('# ── 📧 SMTP ────────────────────────────────────────────────');
+    // SMTP — only if not already in the paste
+    const smtpExtras = [];
     SMTP_KEYS.forEach(k => {
       if (proj.coolifyEnv[k] === undefined) {
-        lines.push(`${k}=${state.reusables.smtp[k] || ''}`);
+        smtpExtras.push(`${k}=${state.reusables.smtp[k] || ''}`);
       }
     });
+    if (smtpExtras.length) {
+      lines.push('');
+      lines.push('# ── 📧 SMTP (additional) ──────────────────────────────────');
+      smtpExtras.forEach(l => lines.push(l));
+    }
 
   } else {
     // ── Mode: No Coolify import (legacy/fallback) ──
