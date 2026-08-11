@@ -1035,8 +1035,11 @@ function generateOutput(proj) {
 
     // Hub overrides to apply on top of the Coolify paste
     const overrides = {};
-    if (state.reusables.hostnames.POSTGRES_HOSTNAME)
-      overrides['POSTGRES_HOSTNAME'] = state.reusables.hostnames.POSTGRES_HOSTNAME;
+    const pgHost = state.reusables.hostnames.POSTGRES_HOSTNAME;
+    if (pgHost) {
+      overrides['POSTGRES_HOSTNAME'] = pgHost;
+      overrides['POSTGRES_HOST'] = pgHost;
+    }
     if (state.reusables.shared.SERVICE_PASSWORD_POSTGRES)
       overrides['SERVICE_PASSWORD_POSTGRES'] = state.reusables.shared.SERVICE_PASSWORD_POSTGRES;
     if (state.reusables.shared.SERVICE_USER_MINIO)
@@ -1049,11 +1052,30 @@ function generateOutput(proj) {
     overrides['STORAGE_TENANT_ID'] = proj.slug;
     overrides['STUDIO_DEFAULT_PROJECT'] = proj.name;
 
+    // Track which overrides actually applied (for the warning below)
+    const missingHub = [];
+    if (!state.reusables.shared.SERVICE_PASSWORD_POSTGRES) missingHub.push('SERVICE_PASSWORD_POSTGRES');
+    if (!state.reusables.shared.SERVICE_USER_MINIO) missingHub.push('SERVICE_USER_MINIO');
+    if (!state.reusables.shared.SERVICE_PASSWORD_MINIO) missingHub.push('SERVICE_PASSWORD_MINIO');
+
     // Output every var from Coolify paste, applying overrides
     Object.keys(proj.coolifyEnv).forEach(k => {
       const v = overrides[k] !== undefined ? overrides[k] : proj.coolifyEnv[k];
-      lines.push(`${k}=${v}`);
+      const marker = overrides[k] !== undefined ? '  # OVERRIDDEN' : '';
+      lines.push(`${k}=${v}${marker}`);
     });
+
+    // Warning if hub shared values not configured
+    if (missingHub.length) {
+      lines.push('');
+      lines.push('# ── ⚠️  WARNING: Hub shared values not configured ─────────');
+      lines.push(`# The following are from the Coolify paste, NOT from the hub:`);
+      missingHub.forEach(k => {
+        lines.push(`#   ${k}=${proj.coolifyEnv[k] || '(empty)'}  ← set this in Reusables → Shared Secrets`);
+      });
+      lines.push(`# If you pasted the SIBLING's env, these are WRONG (random, not hub's).`);
+      lines.push(`# If you pasted the HUB's env, these are correct — ignore this warning.`);
+    }
 
     // Add any hub-shared vars NOT already in the paste
     lines.push('');
