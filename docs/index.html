@@ -1034,26 +1034,23 @@ function generateOutput(proj) {
     lines.push('# ── 🟣 From Coolify Import (all vars, hub-shared overridden) ──');
 
     // Hub overrides to apply on top of the Coolify paste
+    // ALWAYS override these — paste values are random sibling tokens, not hub's
     const overrides = {};
     const pgHost = state.reusables.hostnames.POSTGRES_HOSTNAME;
-    if (pgHost) {
-      overrides['POSTGRES_HOSTNAME'] = pgHost;
-      overrides['POSTGRES_HOST'] = pgHost;
-    }
-    if (state.reusables.shared.SERVICE_PASSWORD_POSTGRES)
-      overrides['SERVICE_PASSWORD_POSTGRES'] = state.reusables.shared.SERVICE_PASSWORD_POSTGRES;
-    if (state.reusables.shared.SERVICE_USER_MINIO)
-      overrides['SERVICE_USER_MINIO'] = state.reusables.shared.SERVICE_USER_MINIO;
-    if (state.reusables.shared.SERVICE_PASSWORD_MINIO)
-      overrides['SERVICE_PASSWORD_MINIO'] = state.reusables.shared.SERVICE_PASSWORD_MINIO;
+    overrides['POSTGRES_HOSTNAME'] = pgHost || '';
+    overrides['POSTGRES_HOST'] = pgHost || '';
+    overrides['SERVICE_PASSWORD_POSTGRES'] = state.reusables.shared.SERVICE_PASSWORD_POSTGRES || '';
+    overrides['SERVICE_USER_MINIO'] = state.reusables.shared.SERVICE_USER_MINIO || '';
+    overrides['SERVICE_PASSWORD_MINIO'] = state.reusables.shared.SERVICE_PASSWORD_MINIO || '';
 
     // Sibling-specific overrides
     overrides['POSTGRES_DB'] = proj.slug;
     overrides['STORAGE_TENANT_ID'] = proj.slug;
     overrides['STUDIO_DEFAULT_PROJECT'] = proj.name;
 
-    // Track which overrides actually applied (for the warning below)
+    // Track which hub overrides are missing
     const missingHub = [];
+    if (!pgHost) missingHub.push('POSTGRES_HOSTNAME');
     if (!state.reusables.shared.SERVICE_PASSWORD_POSTGRES) missingHub.push('SERVICE_PASSWORD_POSTGRES');
     if (!state.reusables.shared.SERVICE_USER_MINIO) missingHub.push('SERVICE_USER_MINIO');
     if (!state.reusables.shared.SERVICE_PASSWORD_MINIO) missingHub.push('SERVICE_PASSWORD_MINIO');
