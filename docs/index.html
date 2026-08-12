@@ -422,8 +422,11 @@ button.warn { background: var(--warn); color: var(--bg); }
   <div class="project-list" id="projectList"></div>
   <div class="sidebar-footer">
     <button onclick="openReusablesModal()">Reusables</button>
+    <button onclick="downloadBackup()">Backup</button>
+    <button onclick="document.getElementById('restoreInput').click()">Restore</button>
     <button class="warn" onclick="resetAll()">Reset</button>
   </div>
+  <input type="file" id="restoreInput" accept=".json" style="display:none;" onchange="restoreBackup(this)">
 </aside>
 
 <main class="main" id="main"></main>
@@ -1041,6 +1044,9 @@ async function checkProjectHealth(proj) {
   const [k, s] = await Promise.all([checkHealth(kongHealthUrl), checkHealth(studioHealthUrl)]);
   proj.health = { kong: k, studio: s };
   proj.healthAt = new Date().toISOString();
+  if ((k === 'live' || s === 'live') && !proj.deployedAt) {
+    proj.deployedAt = new Date().toISOString();
+  }
   save();
   renderSidebar();
   renderMain();
@@ -1704,6 +1710,42 @@ function resetAll() {
   if (!confirm('Reset everything? All projects and reusables will be lost.')) return;
   localStorage.removeItem('supa-sibling-manager-v2');
   location.reload();
+}
+function downloadBackup() {
+  const raw = localStorage.getItem('supa-sibling-manager-v2');
+  if (!raw) { toast('Nothing to backup'); return; }
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state: JSON.parse(raw)
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `supabase-siblings-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup downloaded');
+}
+function restoreBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const stateData = parsed.state || parsed;
+      if (!stateData.projects || !Array.isArray(stateData.projects)) throw new Error('Invalid format');
+      localStorage.setItem('supa-sibling-manager-v2', JSON.stringify(stateData));
+      load();
+      render();
+      toast('Backup restored');
+    } catch (err) {
+      toast('Invalid backup file');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 
 // ─── Init ──────────────────────────────────────────────────
