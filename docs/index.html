@@ -1324,6 +1324,40 @@ function renderMain() {
   const adminUser = (proj.coolifyEnv && proj.coolifyEnv.SERVICE_USER_ADMIN) || getFinalValue('SERVICE_USER_ADMIN', proj) || '';
   const adminPass = (proj.coolifyEnv && proj.coolifyEnv.SERVICE_PASSWORD_ADMIN) || '';
 
+  // MCP config snippets
+  const serviceKey = getFinalValue('SERVICE_SUPABASESERVICE_KEY', proj) || '';
+  const mcpYamlSnippet = [
+    '  ## MCP endpoint - requires service_role key',
+    '  - name: mcp',
+    "    _comment: 'MCP: /mcp -> http://supabase-studio:3000/api/mcp'",
+    '    url: http://supabase-studio:3000/api/mcp',
+    '    routes:',
+    '      - name: mcp',
+    '        strip_path: true',
+    '        paths:',
+    '          - /mcp',
+    '    plugins:',
+    '      - name: cors',
+    '      - name: key-auth',
+    '        config:',
+    '          hide_credentials: false',
+    '      - name: acl',
+    '        config:',
+    '          hide_groups_header: true',
+    '          allow:',
+    '            - admin'
+  ].join('\n');
+  const mcpClientJson = JSON.stringify({
+    mcpServers: {
+      supabase: {
+        url: kongDisplay.replace(/\/$/, '') + '/mcp',
+        headers: {
+          apikey: serviceKey || 'YOUR_SERVICE_ROLE_KEY'
+        }
+      }
+    }
+  }, null, 2);
+
   main.innerHTML = `
     <div class="main-header">
       <div style="display:flex;align-items:center;gap:12px;flex:1;">
@@ -1464,6 +1498,40 @@ function renderMain() {
           <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
           <li><strong>Deploy</strong> — Deploy the sibling service in Coolify</li>
         </ol>
+      </div>
+    </div>
+
+    <div class="section collapsible" data-section="mcp">
+      <h3 class="h3-row" onclick="toggleSection(this)">
+        <span><span class="toggle-arrow">▼</span>Enable MCP Access</span>
+        <span class="badge info">Optional</span>
+      </h3>
+      <div class="section-body">
+        <div class="hint" style="margin-bottom:10px;">
+          MCP lets AI tools (Claude Desktop, Cursor) manage your database. Blocked by default — enable with service_role key auth.
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">Step 1 — Replace Kong MCP plugins</div>
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">
+            Coolify → Service → Files → <code>volumes/api/kong.yml</code> → find the <code>mcp</code> service, replace its plugins with:
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;position:relative;">
+            <button class="secondary" style="position:absolute;top:6px;right:6px;padding:2px 8px;font-size:0.7rem;" onclick="copyText(document.getElementById('mcpYamlPre').innerText)">Copy YAML</button>
+            <pre id="mcpYamlPre" style="margin:0;font-size:0.72rem;white-space:pre-wrap;font-family:'SF Mono',Menlo,monospace;color:var(--text);">${escHtml(mcpYamlSnippet)}</pre>
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">Step 2 — MCP client config</div>
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">
+            Add to your MCP client config (Claude Desktop <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>, Cursor <code>~/.cursor/mcp.json</code>):
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;position:relative;">
+            <button class="secondary" style="position:absolute;top:6px;right:6px;padding:2px 8px;font-size:0.7rem;" onclick="copyText(document.getElementById('mcpClientPre').innerText)">Copy JSON</button>
+            <pre id="mcpClientPre" style="margin:0;font-size:0.72rem;white-space:pre-wrap;font-family:'SF Mono',Menlo,monospace;color:var(--text);">${escHtml(mcpClientJson)}</pre>
+          </div>
+        </div>
       </div>
     </div>
 
