@@ -1362,12 +1362,27 @@ function renderMain() {
     </div>
 
     <div class="section">
-      <h3>🚀 Post-Deploy Steps <span class="badge info">Coolify UI</span></h3>
+      <h3>Post-Deploy Steps <span class="badge info">Coolify UI</span></h3>
       <div class="hint" style="margin-bottom:10px;">After pasting env vars and deploying, do these in Coolify UI for clean URLs + proper auth:</div>
-      <ol style="margin-left:20px;font-size:0.85rem;line-height:1.8;">
-        <li><strong>Set Kong FQDN</strong> — Coolify → Service → <code>supabase-kong</code> → Domains → set to <code>${escHtml(state.urlPatternKong.replace('{slug}', proj.slug))}</code></li>
-        <li><strong>Set Studio FQDN</strong> — Coolify → Service → <code>supabase-studio</code> → Domains → set to <code>${escHtml(state.urlPatternStudio.replace('{slug}', proj.slug))}</code></li>
-        <li><strong>Create Database</strong> — Run in hub's PG: <code>CREATE DATABASE ${escHtml(proj.slug)};</code></li>
+      <ol style="margin-left:20px;font-size:0.85rem;line-height:2;">
+        <li><strong>Set Kong FQDN</strong> — Coolify → Service → <code>supabase-kong</code> → Domains → set to:
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <code style="color:var(--accent);">${escHtml(state.urlPatternKong.replace('{slug}', proj.slug))}</code>
+            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(state.urlPatternKong.replace('{slug}', proj.slug))}')">Copy</button>
+          </div>
+        </li>
+        <li><strong>Set Studio FQDN</strong> — Coolify → Service → <code>supabase-studio</code> → Domains → set to:
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <code style="color:var(--accent);">${escHtml(state.urlPatternStudio.replace('{slug}', proj.slug))}</code>
+            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(state.urlPatternStudio.replace('{slug}', proj.slug))}')">Copy</button>
+          </div>
+        </li>
+        <li><strong>Create Database</strong> — Run in hub's Studio SQL Editor:
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <code style="color:var(--accent);">CREATE DATABASE ${escHtml(proj.slug)} TEMPLATE sibling_template;</code>
+            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('CREATE DATABASE ${escAttr(proj.slug)} TEMPLATE sibling_template;')">Copy</button>
+          </div>
+        </li>
         <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
         <li><strong>Verify</strong> — Open Studio URL, should see Supabase login</li>
         <li><strong>Paste URLs above</strong> — Copy from Coolify, paste in fields above for health checks</li>
@@ -1498,6 +1513,9 @@ function copySqlCommand() {
   if (!proj) return;
   const sql = `CREATE DATABASE ${proj.slug} TEMPLATE sibling_template;`;
   navigator.clipboard.writeText(sql).then(() => toast('SQL copied'));
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied'));
 }
 
 // ─── Helpers ───────────────────────────────────────────────
