@@ -1023,9 +1023,22 @@ function getFinalValue(key, proj) {
 async function checkHealth(url) {
   if (!url) return 'unknown';
   try {
-    await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+    await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(8000) });
     return 'live';
   } catch (e) { return 'dead'; }
+}
+async function checkProjectHealth(proj) {
+  const slug = proj.slug || slugify(proj.name);
+  const kongUrl = state.urlPatternKong.replace('{slug}', slug);
+  const studioUrl = state.urlPatternStudio.replace('{slug}', slug);
+  const statusEl = document.getElementById('healthStatus');
+  if (statusEl) statusEl.innerHTML = '<span class="health-pill checking">Checking...</span>';
+  const [k, s] = await Promise.all([checkHealth(kongUrl), checkHealth(studioUrl)]);
+  proj.health = { kong: k, studio: s };
+  proj.healthAt = new Date().toISOString();
+  save();
+  renderSidebar();
+  renderMain();
 }
 function generateOutput(proj) {
   const lines = [];
@@ -1407,32 +1420,6 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section urls collapsible">
-      <h3 class="h3-row" onclick="toggleSection(this)">
-        <span><span class="toggle-arrow">▼</span>🌐 Public URLs</span>
-        <span class="badge ${(proj.publicUrls.kong || proj.publicUrls.studio) ? 'ok' : 'info'}">${(proj.publicUrls.kong?1:0) + (proj.publicUrls.studio?1:0)}/2 set</span>
-      </h3>
-      <div class="section-body">
-        <div class="hint" style="margin-bottom:10px;">After deploying in Coolify, paste the assigned URLs for health checking. <strong>Important:</strong> edit these FQDNs in Coolify UI (service → Domains) to match patterns below — auto-generated URLs are ugly.</div>
-        <div class="field">
-          <label>Kong URL</label>
-          <input type="text" data-role="url" data-key="kong" value="${escAttr(proj.publicUrls.kong)}" placeholder="${escAttr(state.urlPatternKong.replace('{slug}', proj.slug))}"
-                 oninput="updatePublicUrl('kong', this.value)">
-          ${healthPill(proj.health.kong)}
-        </div>
-        <div class="field">
-          <label>Studio URL</label>
-          <input type="text" data-role="url" data-key="studio" value="${escAttr(proj.publicUrls.studio)}" placeholder="${escAttr(state.urlPatternStudio.replace('{slug}', proj.slug))}"
-                 oninput="updatePublicUrl('studio', this.value)">
-          ${healthPill(proj.health.studio)}
-        </div>
-        <div class="btn-row">
-          <button class="warn" onclick="checkProjectHealth(getCurrentProj())">Run Health Check</button>
-        </div>
-        <div id="healthStatus" style="margin-top:8px;">${proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : ''}</div>
-      </div>
-    </div>
-
     <div class="section collapsible">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>Post-Deploy Steps</span>
@@ -1460,9 +1447,34 @@ function renderMain() {
             </div>
           </li>
           <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
-          <li><strong>Verify</strong> — Open Studio URL, should see Supabase login</li>
-          <li><strong>Paste URLs above</strong> — Copy from Coolify, paste in fields above for health checks</li>
+          <li><strong>Deploy</strong> — Deploy the sibling service in Coolify</li>
         </ol>
+      </div>
+    </div>
+
+    <div class="section urls collapsible">
+      <h3 class="h3-row" onclick="toggleSection(this)">
+        <span><span class="toggle-arrow">▼</span>Health Check</span>
+        <span class="badge ${(proj.health.kong === 'live' || proj.health.studio === 'live') ? 'ok' : 'info'}">${(proj.health.kong === 'live' ? 1 : 0) + (proj.health.studio === 'live' ? 1 : 0)}/2 live</span>
+      </h3>
+      <div class="section-body">
+        <div class="hint" style="margin-bottom:10px;">URLs auto-generated from project name. Run health check after deploying + setting FQDNs in Coolify.</div>
+        <div class="field">
+          <label>Kong API</label>
+          <code style="color:var(--blue);font-size:0.85rem;">${escHtml(kongDisplay)}</code>
+          ${healthPill(proj.health.kong)}
+        </div>
+        <div class="field">
+          <label>Studio</label>
+          <code style="color:var(--blue);font-size:0.85rem;">${escHtml(studioDisplay)}</code>
+          ${healthPill(proj.health.studio)}
+        </div>
+        <div class="btn-row">
+          <button class="warn" onclick="checkProjectHealth(getCurrentProj())">Run Health Check</button>
+          <a href="${escAttr(kongDisplay)}" target="_blank" style="margin-left:auto;font-size:0.8rem;color:var(--muted);">Open Kong</a>
+          <a href="${escAttr(studioDisplay)}" target="_blank" style="font-size:0.8rem;color:var(--muted);">Open Studio</a>
+        </div>
+        <div id="healthStatus" style="margin-top:8px;">${proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : ''}</div>
       </div>
     </div>
   `;
