@@ -1491,8 +1491,8 @@ function renderMain() {
           </li>
           <li><strong>Create Database</strong> — Run in hub's Studio SQL Editor:
             <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-              <code style="color:var(--accent);">CREATE DATABASE ${escHtml(proj.slug)} TEMPLATE sibling_template;</code>
-              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyAndTrack('create-db','CREATE DATABASE ${escAttr(proj.slug)} TEMPLATE sibling_template;')">Copy</button>
+              <code style="color:var(--accent);">CREATE DATABASE ${escHtml(proj.slug)};</code>
+              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyAndTrack('create-db','CREATE DATABASE ${escAttr(proj.slug)};')">Copy</button>
             </div>
           </li>
           <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
@@ -1692,7 +1692,7 @@ function downloadLeanCompose() {
 function copySqlCommand() {
   const proj = getCurrentProj();
   if (!proj) return;
-  const sql = `CREATE DATABASE ${proj.slug} TEMPLATE sibling_template;`;
+  const sql = `CREATE DATABASE ${proj.slug};`;
   navigator.clipboard.writeText(sql).then(() => toast('SQL copied'));
 }
 function copyText(text) {
