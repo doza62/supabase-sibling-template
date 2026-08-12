@@ -970,7 +970,9 @@ function newProject() {
     health: { kong: 'unknown', studio: 'unknown' },
     healthAt: null,
     deployedAt: null,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    collapsed: {},
+    copiedPostDeploy: []
   };
   state.projects.push(proj);
   state.currentId = proj.id;
@@ -1325,7 +1327,7 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section collapsible" style="border-left: 3px solid var(--blue);">
+    <div class="section collapsible" data-section="startup" style="border-left: 3px solid var(--blue);">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>Startup Guide</span>
         <span class="badge info">Do this first</span>
@@ -1346,9 +1348,9 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section collapsible">
+    <div class="section collapsible" data-section="reusables">
       <h3 class="h3-row" onclick="toggleSection(this)">
-        <span><span class="toggle-arrow">▼</span>📦 Reusables Summary</span>
+        <span><span class="toggle-arrow">▼</span>Reusables Summary</span>
         <span class="badge ${hostCount === 3 ? 'ok' : 'bad'}">${hostCount}/3 hostnames</span>
       </h3>
       <div class="section-body">
@@ -1362,7 +1364,7 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section import-section collapsible" style="border-left: 3px solid var(--blue);">
+    <div class="section import-section collapsible" data-section="import" style="border-left: 3px solid var(--blue);">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>📥 Import from Coolify</span>
         <span class="badge ${Object.keys(proj.coolifyEnv||{}).length ? 'ok' : 'info'}">${Object.keys(proj.coolifyEnv||{}).length} vars</span>
@@ -1386,7 +1388,7 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section sibling collapsible">
+    <div class="section sibling collapsible" data-section="sibling">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>🟡 Per-Sibling Config</span>
         <span class="badge info">Auto from name</span>
@@ -1403,7 +1405,7 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section output-section collapsible">
+    <div class="section output-section collapsible" data-section="output">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>📋 Final Output</span>
         <span class="badge info">Paste to Coolify</span>
@@ -1420,7 +1422,7 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section collapsible">
+    <div class="section collapsible" data-section="postdeploy">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>Post-Deploy Steps</span>
         <span class="badge info">Coolify UI</span>
@@ -1431,19 +1433,19 @@ function renderMain() {
           <li><strong>Set Kong FQDN</strong> — Coolify → Service → <code>supabase-kong</code> → Domains → set to:
             <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
               <code style="color:var(--accent);">${escHtml(kongDisplay)}</code>
-              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(kongDisplay)}')">Copy</button>
+              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyAndTrack('kong-fqdn','${escAttr(kongDisplay)}')">Copy</button>
             </div>
           </li>
           <li><strong>Set Studio FQDN</strong> — Coolify → Service → <code>supabase-studio</code> → Domains → set to:
             <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
               <code style="color:var(--accent);">${escHtml(studioDisplay)}</code>
-              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(studioDisplay)}')">Copy</button>
+              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyAndTrack('studio-fqdn','${escAttr(studioDisplay)}')">Copy</button>
             </div>
           </li>
           <li><strong>Create Database</strong> — Run in hub's Studio SQL Editor:
             <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
               <code style="color:var(--accent);">CREATE DATABASE ${escHtml(proj.slug)} TEMPLATE sibling_template;</code>
-              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('CREATE DATABASE ${escAttr(proj.slug)} TEMPLATE sibling_template;')">Copy</button>
+              <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyAndTrack('create-db','CREATE DATABASE ${escAttr(proj.slug)} TEMPLATE sibling_template;')">Copy</button>
             </div>
           </li>
           <li><strong>Enable Predefined Network</strong> — Both hub AND this sibling must have it on</li>
@@ -1452,7 +1454,7 @@ function renderMain() {
       </div>
     </div>
 
-    <div class="section urls collapsible">
+    <div class="section urls collapsible" data-section="health">
       <h3 class="h3-row" onclick="toggleSection(this)">
         <span><span class="toggle-arrow">▼</span>Health Check</span>
         <span class="badge ${(proj.health.kong === 'live' || proj.health.studio === 'live') ? 'ok' : 'info'}">${(proj.health.kong === 'live' ? 1 : 0) + (proj.health.studio === 'live' ? 1 : 0)}/2 live</span>
@@ -1488,6 +1490,7 @@ function renderMain() {
       try { newEl.setSelectionRange(focusInfo.caretStart, focusInfo.caretEnd); } catch(e) {}
     }
   }
+  applyCollapsedState();
 }
 
 function render() {
@@ -1540,12 +1543,12 @@ function importCoolifyEnv() {
   proj.coolifyEnv = {};
   Object.keys(parsed).forEach(k => { proj.coolifyEnv[k] = parsed[k]; });
   const count = Object.keys(proj.coolifyEnv).length;
+  if (!proj.collapsed) proj.collapsed = {};
+  if (count > 0) {
+    proj.collapsed.import = true;
+    proj.collapsed.startup = true;
+  }
   save();
-  // Auto-collapse import section after successful import
-  setTimeout(() => {
-    const importSection = document.querySelector('.section.import-section');
-    if (importSection) importSection.classList.add('collapsed');
-  }, 100);
   render();
   toast(count > 0 ? `Imported ${count} env vars` : 'No KEY=VALUE pairs found');
 }
@@ -1563,11 +1566,14 @@ function copyOutput() {
   if (!out) return;
   out.select();
   document.execCommand('copy');
+  const proj = getCurrentProj();
+  if (proj) {
+    if (!proj.collapsed) proj.collapsed = {};
+    proj.collapsed.output = true;
+    save();
+  }
   toast('Copied to clipboard');
-  setTimeout(() => {
-    const outputSection = document.querySelector('.section.output-section');
-    if (outputSection) outputSection.classList.add('collapsed');
-  }, 500);
+  render();
 }
 function downloadOutput() {
   const p = getCurrentProj(); if (!p) return;
@@ -1598,10 +1604,49 @@ function copySqlCommand() {
 function copyText(text) {
   navigator.clipboard.writeText(text).then(() => toast('Copied'));
 }
+function copyAndTrack(itemName, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    toast('Copied');
+    const proj = getCurrentProj();
+    if (!proj) return;
+    if (!proj.copiedPostDeploy) proj.copiedPostDeploy = [];
+    if (!proj.copiedPostDeploy.includes(itemName)) proj.copiedPostDeploy.push(itemName);
+    const allCopied = ['kong-fqdn', 'studio-fqdn', 'create-db'].every(i => proj.copiedPostDeploy.includes(i));
+    if (allCopied) {
+      if (!proj.collapsed) proj.collapsed = {};
+      proj.collapsed.postdeploy = true;
+      save();
+      render();
+      toast('All steps copied — section collapsed');
+    } else {
+      save();
+    }
+  });
+}
 
 function toggleSection(headerEl) {
   const section = headerEl.closest('.section');
-  if (section) section.classList.toggle('collapsed');
+  if (!section) return;
+  section.classList.toggle('collapsed');
+  const name = section.dataset.section;
+  const isCollapsed = section.classList.contains('collapsed');
+  if (name) {
+    const proj = getCurrentProj();
+    if (proj) {
+      if (!proj.collapsed) proj.collapsed = {};
+      proj.collapsed[name] = isCollapsed;
+      save();
+    }
+  }
+}
+
+function applyCollapsedState() {
+  const proj = getCurrentProj();
+  if (!proj || !proj.collapsed) return;
+  document.querySelectorAll('.section[data-section]').forEach(s => {
+    const name = s.dataset.section;
+    if (proj.collapsed[name]) s.classList.add('collapsed');
+  });
 }
 
 // ─── Helpers ───────────────────────────────────────────────
