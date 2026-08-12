@@ -1031,11 +1031,14 @@ async function checkHealth(url) {
 }
 async function checkProjectHealth(proj) {
   const slug = proj.slug || slugify(proj.name);
-  const kongUrl = state.urlPatternKong.replace('{slug}', slug);
-  const studioUrl = state.urlPatternStudio.replace('{slug}', slug);
+  const kongBase = state.urlPatternKong.replace('{slug}', slug);
+  const studioBase = state.urlPatternStudio.replace('{slug}', slug);
+  // Hit public health endpoints instead of root (avoids auth redirect)
+  const kongHealthUrl = kongBase.replace(/\/$/, '') + '/auth/v1/health';
+  const studioHealthUrl = studioBase.replace(/\/$/, '') + '/api/platform/profile';
   const statusEl = document.getElementById('healthStatus');
   if (statusEl) statusEl.innerHTML = '<span class="health-pill checking">Checking...</span>';
-  const [k, s] = await Promise.all([checkHealth(kongUrl), checkHealth(studioUrl)]);
+  const [k, s] = await Promise.all([checkHealth(kongHealthUrl), checkHealth(studioHealthUrl)]);
   proj.health = { kong: k, studio: s };
   proj.healthAt = new Date().toISOString();
   save();
@@ -1311,6 +1314,10 @@ function renderMain() {
     return /:\d+$/.test(u) ? u : u + ':3000';
   })();
 
+  // Admin credentials from Coolify import
+  const adminUser = (proj.coolifyEnv && proj.coolifyEnv.SERVICE_USER_ADMIN) || getFinalValue('SERVICE_USER_ADMIN', proj) || '';
+  const adminPass = (proj.coolifyEnv && proj.coolifyEnv.SERVICE_PASSWORD_ADMIN) || '';
+
   main.innerHTML = `
     <div class="main-header">
       <div style="display:flex;align-items:center;gap:12px;flex:1;">
@@ -1471,9 +1478,22 @@ function renderMain() {
           <code style="color:var(--blue);font-size:0.85rem;">${escHtml(studioDisplay)}</code>
           ${healthPill(proj.health.studio)}
         </div>
+        <div style="margin-top:12px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px;">Admin Credentials (for Kong dashboard / Studio login)</div>
+          <div class="field" style="margin-bottom:4px;">
+            <label style="min-width:100px;">User</label>
+            <code style="color:var(--accent);font-size:0.85rem;">${escHtml(adminUser) || '(not set)'}</code>
+            ${adminUser ? `<button class="secondary" style="padding:2px 8px;font-size:0.7rem;margin-left:auto;" onclick="copyText('${escAttr(adminUser)}')">Copy</button>` : ''}
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="min-width:100px;">Password</label>
+            <code style="color:${adminPass ? 'var(--accent)' : 'var(--warn)'};font-size:0.85rem;">${adminPass ? escHtml(adminPass) : '(Coolify auto-gens after deploy)'}</code>
+            ${adminPass ? `<button class="secondary" style="padding:2px 8px;font-size:0.7rem;margin-left:auto;" onclick="copyText('${escAttr(adminPass)}')">Copy</button>` : ''}
+          </div>
+        </div>
         <div class="btn-row">
           <button class="warn" onclick="checkProjectHealth(getCurrentProj())">Run Health Check</button>
-          <a href="${escAttr(kongDisplay)}" target="_blank" style="margin-left:auto;font-size:0.8rem;color:var(--muted);">Open Kong</a>
+          <a href="${escAttr(kongDisplay)}/auth/v1/health" target="_blank" style="margin-left:auto;font-size:0.8rem;color:var(--muted);">Open Kong</a>
           <a href="${escAttr(studioDisplay)}" target="_blank" style="font-size:0.8rem;color:var(--muted);">Open Studio</a>
         </div>
         <div id="healthStatus" style="margin-top:8px;">${proj.healthAt ? `<span class="hint">Last checked: ${new Date(proj.healthAt).toLocaleString()}</span>` : ''}</div>
