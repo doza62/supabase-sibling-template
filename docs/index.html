@@ -1282,6 +1282,16 @@ function renderMain() {
     return `<span class="health-pill ${cls}">${icon} ${status}</span>`;
   };
 
+  // Ensure ports are always shown in FQDNs (Kong=8000, Studio=3000)
+  const kongDisplay = (() => {
+    let u = state.urlPatternKong.replace('{slug}', proj.slug);
+    return /:\d+$/.test(u) ? u : u + ':8000';
+  })();
+  const studioDisplay = (() => {
+    let u = state.urlPatternStudio.replace('{slug}', proj.slug);
+    return /:\d+$/.test(u) ? u : u + ':3000';
+  })();
+
   main.innerHTML = `
     <div class="main-header">
       <div style="display:flex;align-items:center;gap:12px;flex:1;">
@@ -1367,14 +1377,14 @@ function renderMain() {
       <ol style="margin-left:20px;font-size:0.85rem;line-height:2;">
         <li><strong>Set Kong FQDN</strong> — Coolify → Service → <code>supabase-kong</code> → Domains → set to:
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-            <code style="color:var(--accent);">${escHtml(state.urlPatternKong.replace('{slug}', proj.slug))}</code>
-            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(state.urlPatternKong.replace('{slug}', proj.slug))}')">Copy</button>
+            <code style="color:var(--accent);">${escHtml(kongDisplay)}</code>
+            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(kongDisplay)}')">Copy</button>
           </div>
         </li>
         <li><strong>Set Studio FQDN</strong> — Coolify → Service → <code>supabase-studio</code> → Domains → set to:
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-            <code style="color:var(--accent);">${escHtml(state.urlPatternStudio.replace('{slug}', proj.slug))}</code>
-            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(state.urlPatternStudio.replace('{slug}', proj.slug))}')">Copy</button>
+            <code style="color:var(--accent);">${escHtml(studioDisplay)}</code>
+            <button class="secondary" style="padding:2px 8px;font-size:0.75rem;" onclick="copyText('${escAttr(studioDisplay)}')">Copy</button>
           </div>
         </li>
         <li><strong>Create Database</strong> — Run in hub's Studio SQL Editor:
