@@ -1334,7 +1334,10 @@ function renderMain() {
   const adminPass = (proj.coolifyEnv && proj.coolifyEnv.SERVICE_PASSWORD_ADMIN) || '';
 
   // MCP config snippets
-  const serviceKey = getFinalValue('SERVICE_SUPABASESERVICE_KEY', proj) || '';
+  const serviceKey = (proj.coolifyEnv && proj.coolifyEnv.SERVICE_SUPABASESERVICE_KEY)
+    || state.reusables.shared.SERVICE_SUPABASESERVICE_KEY
+    || getFinalValue('SERVICE_SUPABASESERVICE_KEY', proj)
+    || '';
   const mcpYamlSnippet = [
     '  ## MCP endpoint - requires service_role key',
     '  - name: mcp',
