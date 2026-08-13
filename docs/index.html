@@ -1463,6 +1463,7 @@ function renderMain() {
         <div class="btn-row">
           <button onclick="copyOutput()">Copy to Clipboard</button>
           <button class="secondary" onclick="downloadOutput()">Download .env</button>
+          <button class="secondary" onclick="copyLeanCompose()">Copy Lean Compose</button>
           <button class="secondary" onclick="downloadLeanCompose()">Download Lean Compose</button>
           <button class="secondary" onclick="copySqlCommand()">Copy SQL Command</button>
         </div>
@@ -1688,6 +1689,9 @@ function downloadLeanCompose() {
   a.click();
   URL.revokeObjectURL(a.href);
   toast('Lean compose downloaded');
+}
+function copyLeanCompose() {
+  navigator.clipboard.writeText(LEAN_COMPOSE_TEMPLATE).then(() => toast('Lean compose copied'));
 }
 function copySqlCommand() {
   const proj = getCurrentProj();
