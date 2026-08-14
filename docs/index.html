@@ -1096,6 +1096,17 @@ function generateOutput(proj) {
     overrides['SERVICE_FQDN_SUPABASEKONG_8000'] = kongFqdnRaw;
     overrides['SERVICE_URL_SUPABASEKONG_8000'] = kongUrlRaw;
 
+    // Public URLs — regenerate (paste has literal ${...} template refs, never expanded)
+    overrides['API_EXTERNAL_URL'] = getFinalValue('API_EXTERNAL_URL', proj);
+    overrides['GOTRUE_SITE_URL'] = getFinalValue('GOTRUE_SITE_URL', proj);
+
+    // SMTP — Reusables values override the paste (paste usually has empty SMTP)
+    SMTP_KEYS.forEach(k => {
+      if (state.reusables.smtp[k]) {
+        overrides[k] = state.reusables.smtp[k];
+      }
+    });
+
     // Track which hub overrides are missing
     const missingHub = [];
     if (!pgHost) missingHub.push('POSTGRES_HOSTNAME');
