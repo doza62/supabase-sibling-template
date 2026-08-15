@@ -297,3 +297,6 @@ services:
         source: ./volumes/functions/hello/index.ts
         target: /home/deno/functions/hello/index.ts
     command: [start, '--main-service', /home/deno/functions/main]
+
+volumes:
+  deno-cache:
